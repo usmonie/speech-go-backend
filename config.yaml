@@ -1,0 +1,19 @@
+server:
+	address: ":8080"
+	read_timeout: 5s
+	write_timeout: 10s
+
+database:
+	host: "localhost"
+	port: 5432
+	user: "speech_user"
+	password: "speech_password"
+	dbname: "speech_db"
+	ssl_mode: "disable"
+
+jwt:
+	secret_key: "your-secret-key-here"
+	expiration: 24h
+
+log:
+	level: "info"
