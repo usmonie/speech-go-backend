@@ -15,7 +15,7 @@ type RedisCache struct {
 
 func NewRedisCache() (*RedisCache, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("REDIS_ADDR"),
+		//		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
 	ctx := context.Background()
