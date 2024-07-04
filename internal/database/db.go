@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
-	"os"
+//	"os"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -16,10 +16,14 @@ type Database struct {
 
 func NewDatabase() (*Database, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable TimeZone=UTC",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
+		"localhost",
+		"postgres",
+		"12345",
+		"users",
+		//		os.Getenv("DB_HOST"),
+		//		os.Getenv("DB_USER"),
+		//		os.Getenv("DB_PASSWORD"),
+		//		os.Getenv("DB_NAME"),
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

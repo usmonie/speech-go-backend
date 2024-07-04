@@ -42,6 +42,7 @@ func (s *Server) setupRoutes() {
 	{
 		authRoute.GET("/protected", s.protectedEndpoint)
 		authRoute.POST("/users", s.createUser)
+
 		s.router.POST("/register", s.registerUser)
 		s.router.POST("/login", s.login)
 		s.router.POST("/refresh", s.refreshToken)
@@ -91,7 +92,18 @@ func (s *Server) registerUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"user_id": newUser.ID})
+	authService := auth.NewService(s.db)
+	tokens, err := authService.GenerateTokens(newUser.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"user_id":       newUser.ID,
+		"access_token":  tokens.AccessToken,
+		"refresh_token": tokens.RefreshToken,
+	})
 }
 
 func (s *Server) login(c *gin.Context) {

@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"

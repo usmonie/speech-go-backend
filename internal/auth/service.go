@@ -51,6 +51,23 @@ func (s *Service) Login(email, password string) (*TokenPair, error) {
 	}, nil
 }
 
+func (s *Service) GenerateTokens(userID uint) (*TokenPair, error) {
+	accessToken, err := generateToken(userID, "access", 15*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := generateToken(userID, "refresh", 7*24*time.Hour)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
 func generateToken(userID uint, tokenType string, expiration time.Duration) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
