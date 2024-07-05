@@ -15,7 +15,9 @@ type RedisCache struct {
 
 func NewRedisCache() (*RedisCache, error) {
 	client := redis.NewClient(&redis.Options{
-		//		Addr: os.Getenv("REDIS_ADDR"),
+		Addr:     "redis-11214.c311.eu-central-1-1.ec2.redns.redis-cloud.com:11214",
+		Username: "gobackend",
+		Password: "Vyrbog-2teddi-kicpes",
 	})
 
 	ctx := context.Background()

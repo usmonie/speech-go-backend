@@ -37,11 +37,11 @@ func (s *Server) setupRoutes() {
 	s.router.GET("/health", s.healthCheck)
 
 	// Group for authenticated routes
-	authRoute := s.router.Group("/")
-	authRoute.Use(AuthMiddleware())
+	authenticatedRoute := s.router.Group("/")
+	authenticatedRoute.Use(AuthMiddleware())
 	{
-		authRoute.GET("/protected", s.protectedEndpoint)
-		authRoute.POST("/users", s.createUser)
+		authenticatedRoute.GET("/protected", s.protectedEndpoint)
+		authenticatedRoute.POST("/users", s.createUser)
 
 		s.router.POST("/register", s.registerUser)
 		s.router.POST("/login", s.login)
