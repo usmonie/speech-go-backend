@@ -30,14 +30,16 @@ func (h *AuthHandler) Register(ctx context.Context, req *RegisterRequest) (*Regi
 }
 
 func (h *AuthHandler) VerifyEmail(ctx context.Context, req *VerifyEmailRequest) (*VerifyEmailResponse, error) {
-	err := h.service.VerifyEmail(req.Email, req.Code)
+	token, err := h.service.VerifyEmail(req.Email, req.Code)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to verify email: %v", err)
 	}
 
 	return &VerifyEmailResponse{
-		Success: true,
-		Message: "Email verified successfully",
+		Success:      true,
+		Message:      "Email verified successfully",
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
 	}, nil
 }
 

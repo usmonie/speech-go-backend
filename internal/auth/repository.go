@@ -2,7 +2,6 @@ package auth
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 )
 
@@ -42,9 +41,7 @@ func (r *PostgresRepository) CreateUser(user *User) (string, error) {
 }
 
 func (r *PostgresRepository) UpdateUserVerificationStatus(email string, verified bool) error {
-	println("STARTED UPDATING USER")
 	_, err := r.db.Exec("UPDATE users SET verified = $1 WHERE email = $2", verified, email)
-	fmt.Printf("ENDED UPDATING USER %s", err)
 	return err
 }
 

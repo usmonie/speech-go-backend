@@ -80,6 +80,8 @@ message VerifyEmailRequest {
 message VerifyEmailResponse {
   bool success = 1;
   string message = 2;
+  string access_token = 3;
+  string refresh_token = 4;
 }
 
 message ResendVerificationEmailRequest {

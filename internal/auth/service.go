@@ -15,14 +15,13 @@ import (
 
 type Service interface {
 	Register(username, email, password, name, about string) (string, error)
-	VerifyEmail(email, code string) error
+	VerifyEmail(email, code string) (*Token, error)
 	Login(email, password string) (*Token, error)
 	ResendVerificationEmail(email string) error
 	RefreshToken(refreshToken string) (*Token, error)
 	ForgotPassword(email string) error
 	ResetPassword(email, code, newPassword string) error
 }
-
 type AuthService struct {
 	repo                   Repository
 	jwtSecret              []byte
@@ -92,31 +91,42 @@ func (s *AuthService) Register(username, email, password, name, about string) (s
 	return userID, nil
 }
 
-func (s *AuthService) VerifyEmail(email, code string) error {
+func (s *AuthService) VerifyEmail(email, code string) (*Token, error) {
 	verification, err := s.repo.GetEmailVerification(email)
 	if err != nil {
-		return fmt.Errorf("failed to get verification code: %v", err)
+		return nil, fmt.Errorf("failed to get verification code: %v", err)
 	}
 
 	if verification.Code != code {
-		return fmt.Errorf("invalid verification code")
+		return nil, fmt.Errorf("invalid verification code")
 	}
 
 	if time.Now().After(verification.ExpiresAt) {
-		return fmt.Errorf("verification code has expired")
+		return nil, fmt.Errorf("verification code has expired")
+	}
+
+	user, err := s.repo.GetUserByEmail(email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
 
 	err = s.repo.UpdateUserVerificationStatus(email, true)
 	if err != nil {
-		return fmt.Errorf("failed to update user verification status: %v", err)
+		return nil, fmt.Errorf("failed to update user verification status: %v", err)
 	}
 
 	err = s.repo.DeleteEmailVerification(email)
 	if err != nil {
-		return fmt.Errorf("failed to delete verification code: %v", err)
+		return nil, fmt.Errorf("failed to delete verification code: %v", err)
 	}
-	
-	return nil
+
+	// Generate tokens
+	token, err := s.generateTokenPair(user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate tokens: %v", err)
+	}
+
+	return token, nil
 }
 
 func (s *AuthService) Login(email, password string) (*Token, error) {
