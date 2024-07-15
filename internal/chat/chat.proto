@@ -1,0 +1,356 @@
+// File: chat/chat.proto
+
+syntax = "proto3";
+
+package chat;
+
+option go_package = "github.com/yourusername/speech/internal/chat";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+service ChatService {
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream Message);
+  rpc UpdateMessageStatus(UpdateMessageStatusRequest) returns (UpdateMessageStatusResponse);
+  rpc ReplyToMessage(ReplyToMessageRequest) returns (ReplyToMessageResponse);
+  rpc ForwardMessage(ForwardMessageRequest) returns (ForwardMessageResponse);
+  rpc CreatePublicGroupChat(CreatePublicGroupChatRequest) returns (CreatePublicGroupChatResponse);
+  rpc CreatePrivateGroupChat(CreatePrivateGroupChatRequest) returns (CreatePrivateGroupChatResponse);
+  rpc JoinPublicGroupChat(JoinPublicGroupChatRequest) returns (JoinPublicGroupChatResponse);
+  rpc CreateChatInvitation(CreateChatInvitationRequest) returns (CreateChatInvitationResponse);
+  rpc JoinPrivateGroupChat(JoinPrivateGroupChatRequest) returns (JoinPrivateGroupChatResponse);
+  
+  rpc UpdateGroupInfo(UpdateGroupInfoRequest) returns (UpdateGroupInfoResponse);
+  rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+  rpc BanUser(BanUserRequest) returns (BanUserResponse);
+  rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
+  rpc CreateInviteLink(CreateInviteLinkRequest) returns (CreateInviteLinkResponse);
+  rpc PinMessage(PinMessageRequest) returns (PinMessageResponse);
+  rpc UnpinMessage(UnpinMessageRequest) returns (UnpinMessageResponse);
+  rpc UpdateUserRole(UpdateUserRoleRequest) returns (UpdateUserRoleResponse);
+  rpc CreateCustomRole(CreateCustomRoleRequest) returns (CreateCustomRoleResponse);
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+  rpc UpdateRoom(UpdateRoomRequest) returns (UpdateRoomResponse);
+  rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse);
+}
+
+service UserStatusService {
+  rpc UpdateStatus(UpdateStatusRequest) returns (UpdateStatusResponse);
+  rpc UpdateActivity(UpdateActivityRequest) returns (UpdateActivityResponse);
+  rpc ReceiveStatusUpdates(ReceiveStatusUpdatesRequest) returns (stream StatusUpdateResponse);
+}
+
+message SendMessageRequest {
+  string chat_id = 1;
+  string sender_id = 2;
+  string content = 3;
+  string reply_to_message_id = 4;
+}
+
+message SendMessageResponse {
+  string message_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message Message {
+  string message_id = 1;
+  string chat_id = 2;
+  string sender_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp sent_at = 5;
+  MessageStatusResponse status = 6;
+  string reply_to_message_id = 7;
+  google.protobuf.Timestamp delivered_at = 8;
+  google.protobuf.Timestamp read_at = 9;
+}
+
+enum MessageStatusResponse {
+  MESSAGE_SENT = 0;
+  MESSAGE_DELIVERED = 1;
+  MESSAGE_READ = 2;
+}
+
+message ReceiveMessagesRequest {
+  string user_id = 1;
+}
+
+message UpdateMessageStatusRequest {
+  string message_id = 1;
+  MessageStatusResponse status = 2;
+}
+
+message UpdateMessageStatusResponse {
+  bool success = 1;
+  MessageStatusResponse new_status = 2;
+  google.protobuf.Timestamp status_updated_at = 3;
+}
+
+message ReplyToMessageRequest {
+  string chat_id = 1;
+  string sender_id = 2;
+  string content = 3;
+  string original_message_id = 4;
+}
+
+message ReplyToMessageResponse {
+  string message_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message ForwardMessageRequest {
+  string chat_id = 1;
+  string sender_id = 2;
+  string message_id = 3;
+}
+
+message ForwardMessageResponse {
+  string new_message_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message UpdateStatusRequest {
+  string user_id = 1;
+  string chat_id = 2;
+  UserStatusResponse status = 3;
+}
+
+message UpdateStatusResponse {
+  bool success = 1;
+}
+
+message UpdateActivityRequest {
+  string user_id = 1;
+  string chat_id = 2;
+  ActivityStatusResponse activity = 3;
+}
+
+message UpdateActivityResponse {
+  bool success = 1;
+}
+
+message ReceiveStatusUpdatesRequest {
+  string user_id = 1;
+}
+
+message StatusUpdateResponse {
+  string user_id = 1;
+  string chat_id = 2;
+  UserStatusResponse status = 3;
+  ActivityStatusResponse activity = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+enum UserStatusResponse {
+  OFFLINE = 0;
+  ONLINE = 1;
+}
+
+enum ActivityStatusResponse {
+  NONE = 0;
+  TYPING = 1;
+  SELECTING_IMAGE = 2;
+  SELECTING_STICKER = 3;
+}
+
+message ChatResponse {
+  string chat_id = 1;
+  string chat_type = 2;
+  string chat_name = 3;
+  string username = 4;
+  string invitation_url = 5;
+  google.protobuf.Timestamp created_at = 6;
+  string created_by = 7;
+  repeated Room rooms = 8; // New field
+}
+
+message CreatePublicGroupChatRequest {
+  string name = 1;
+  string username = 2;
+  string creator_id = 3;
+}
+
+message CreatePublicGroupChatResponse {
+  ChatResponse chat = 1;
+}
+
+message CreatePrivateGroupChatRequest {
+  string name = 1;
+  string creator_id = 2;
+}
+
+message CreatePrivateGroupChatResponse {
+  ChatResponse chat = 1;
+}
+
+message JoinPublicGroupChatRequest {
+  string username = 1;
+  string user_id = 2;
+}
+
+message JoinPublicGroupChatResponse {
+  bool success = 1;
+}
+
+message ChatInvitation {
+  string invitation_id = 1;
+  string chat_id = 2;
+  string inviter_id = 3;
+  string invitee_id = 4;
+  string invitation_url = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  bool is_active = 8;
+}
+
+message CreateChatInvitationRequest {
+  string chat_id = 1;
+  string inviter_id = 2;
+  string invitee_id = 3;
+  google.protobuf.Duration expires_in = 4;
+}
+
+message CreateChatInvitationResponse {
+  ChatInvitation invitation = 1;
+}
+
+message JoinPrivateGroupChatRequest {
+  string invitation_url = 1;
+  string user_id = 2;
+}
+
+message JoinPrivateGroupChatResponse {
+  bool success = 1;
+}
+
+
+message Room {
+  string room_id = 1;
+  string room_name = 2;
+  string description = 3;
+}
+
+message Role {
+  string role_id = 1;
+  string role_name = 2;
+  bool can_change_info = 3;
+  bool can_delete_messages = 4;
+  bool can_ban_users = 5;
+  bool can_invite_users = 6;
+  bool can_pin_messages = 7;
+  bool can_manage_roles = 8;
+}
+
+message UpdateGroupInfoRequest {
+  string chat_id = 1;
+  string new_name = 2;
+  string new_description = 3;
+}
+
+message UpdateGroupInfoResponse {
+  bool success = 1;
+}
+
+message DeleteMessageRequest {
+  string chat_id = 1;
+  string message_id = 2;
+}
+
+message DeleteMessageResponse {
+  bool success = 1;
+}
+
+message BanUserRequest {
+  string chat_id = 1;
+  string user_id = 2;
+  google.protobuf.Duration duration = 3;
+}
+
+message BanUserResponse {
+  bool success = 1;
+}
+
+message UnbanUserRequest {
+  string chat_id = 1;
+  string user_id = 2;
+}
+
+message UnbanUserResponse {
+  bool success = 1;
+}
+
+message CreateInviteLinkRequest {
+  string chat_id = 1;
+  google.protobuf.Duration expiration = 2;
+}
+
+message CreateInviteLinkResponse {
+  string invite_link = 1;
+}
+
+message PinMessageRequest {
+  string chat_id = 1;
+  string message_id = 2;
+}
+
+message PinMessageResponse {
+  bool success = 1;
+}
+
+message UnpinMessageRequest {
+  string chat_id = 1;
+  string message_id = 2;
+}
+
+message UnpinMessageResponse {
+  bool success = 1;
+}
+
+message UpdateUserRoleRequest {
+  string chat_id = 1;
+  string user_id = 2;
+  string role_id = 3;
+}
+
+message UpdateUserRoleResponse {
+  bool success = 1;
+}
+
+message CreateCustomRoleRequest {
+  string chat_id = 1;
+  Role role = 2;
+}
+
+message CreateCustomRoleResponse {
+  string role_id = 1;
+}
+
+message CreateRoomRequest {
+  string chat_id = 1;
+  string room_name = 2;
+  string description = 3;
+}
+
+message CreateRoomResponse {
+  Room room = 1;
+}
+
+message UpdateRoomRequest {
+  string chat_id = 1;
+  string room_id = 2;
+  string new_name = 3;
+  string new_description = 4;
+}
+
+message UpdateRoomResponse {
+  bool success = 1;
+}
+
+message DeleteRoomRequest {
+  string chat_id = 1;
+  string room_id = 2;
+}
+
+message DeleteRoomResponse {
+  bool success = 1;
+}

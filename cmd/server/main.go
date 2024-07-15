@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"log"
 	"net"
+	"speech/internal/auth/proto"
 
-	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"speech/config"
 	"speech/internal/auth"
-	"speech/internal/di"
+	"speech/internal/chat"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	db, err := sql.Open("postgres", "user=postgres password=12345 dbname=speech sslmode=disable")
+	db, err := sql.Open("postgres", "user=postgres password=12345 dbname=speech_temp sslmode=disable")
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -29,21 +29,36 @@ func main() {
 			log.Fatal("Error closing database connection")
 		}
 	}(db)
+	//
+	//	authHandler, err := di.InitializeAuthHandler(cfg, db)
+	//	if err != nil {
+	//		log.Fatalf("Failed to initialize auth handler: %v", err)
+	//	}
 
-	authHandler, err := di.InitializeAuthHandler(cfg, db)
-	if err != nil {
-		log.Fatalf("Failed to initialize auth handler: %v", err)
-	}
+	userService := InitializeAppWire(db, cfg)
 
-	authMiddleware := auth.NewAuthMiddleware(cfg.JWTSecret)
+	// Initialize chat components
+	chatRepo := chat.NewPostgresRepository(db)
+	chatService := chat.NewChatService(chatRepo)
+	chatHandler := chat.NewChatHandler(chatService)
+
+	//	authMiddleware := auth.NewAuthMiddleware(cfg.JWTSecret)
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(authMiddleware.UnaryInterceptor),
+		grpc.UnaryInterceptor(auth.AuthenticationInterceptor),
 	)
-	auth.RegisterAuthServiceServer(grpcServer, authHandler)
+
+	// Register auth service
+	proto.RegisterUserServiceServer(grpcServer, userService)
+	//	auth.RegisterAuthServiceServer(grpcServer, authHandler)
+
+	// Register chat services
+	chat.RegisterChatServiceServer(grpcServer, chatHandler)
+	chat.RegisterUserStatusServiceServer(grpcServer, chatHandler)
+
 	reflection.Register(grpcServer)
 
-	lis, err := net.Listen("tcp", ":" + cfg.Port)
+	lis, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}

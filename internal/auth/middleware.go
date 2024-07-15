@@ -2,78 +2,218 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
+	"speech/internal/sessions"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-type AuthMiddleware struct {
-	jwtSecret []byte
+var (
+	ErrMissingDeviceInfo = errors.New("missing device info")
+	ErrMissingKey        = errors.New("missing key")
+	ErrMissingToken      = errors.New("missing access token")
+	ErrInvalidToken      = errors.New("invalid access token")
+	ErrTokenExpired      = errors.New("access token has expired")
+
+	// List of methods that don't require authentication
+	publicMethods = map[string]bool{
+		"/auth.UserService/CreateUser":           true,
+		"/auth.UserService/Login":                true,
+		"/auth.UserService/RefreshToken":         true,
+		"/auth.UserService/RequestPasswordReset": true,
+		"/auth.UserService/ResetPassword":        true,
+	}
+)
+
+// TokenClaims represents the claims in the access token
+type TokenClaims struct {
+	jwt.RegisteredClaims
+	UserID    string `json:"user_id"`
+	SessionID string `json:"session_id"`
 }
 
-func NewAuthMiddleware(jwtSecret []byte) *AuthMiddleware {
-	return &AuthMiddleware{jwtSecret: jwtSecret}
-}
-
-func (am *AuthMiddleware) UnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	// Skip token validation for authentication methods
-	if info.FullMethod == "/auth.AuthService/Login" || info.FullMethod == "/auth.AuthService/Register" ||
-		info.FullMethod == "/auth.AuthService/ForgotPassword" || info.FullMethod == "/auth.AuthService/ResetPassword" ||
-		info.FullMethod == "/auth.AuthService/VerifyEmail" || info.FullMethod == "/auth.AuthService/RefreshToken" {
-		return handler(ctx, req)
+// AuthenticationInterceptor is a gRPC interceptor for authentication
+func AuthenticationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	newCtx, err := extractDeviceInfoFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid metadata: %v", err)
 	}
 
-	userID, err := am.validateToken(ctx)
+	// Check if the method requires authentication
+	if _, ok := publicMethods[info.FullMethod]; ok {
+		return handler(newCtx, req)
+	}
+
+	token, err := extractTokenFromContext(newCtx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
+	}
+
+	claims, err := ValidateAccessToken(token)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
 	}
 
 	// Add the user ID to the context
-	newCtx := context.WithValue(ctx, "user_id", userID)
+	newCtx = context.WithValue(newCtx, "user_id", claims.UserID)
+	newCtx = context.WithValue(newCtx, "session_id", claims.SessionID)
 
-	// Call the handler with the new context
+	// Proceed with the request
 	return handler(newCtx, req)
 }
 
-func (am *AuthMiddleware) validateToken(ctx context.Context) (string, error) {
+// extractTokenFromContext extracts the token from the gRPC context
+func extractTokenFromContext(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Errorf(codes.Unauthenticated, "metadata is not provided")
+		return "", ErrMissingToken
 	}
 
-	authHeader, ok := md["authorization"]
-	if !ok || len(authHeader) == 0 {
-		return "", status.Errorf(codes.Unauthenticated, "authorization token is not provided")
+	values := md.Get("authorization")
+	if len(values) == 0 {
+		return "", ErrMissingToken
 	}
 
-	bearerToken := authHeader[0]
-	token := strings.TrimPrefix(bearerToken, "Bearer ")
+	authHeader := values[0]
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return "", ErrInvalidToken
+	}
 
-	claims := jwt.MapClaims{}
-	parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return am.jwtSecret, nil
-	})
+	return strings.TrimPrefix(authHeader, "Bearer "), nil
+}
 
+// extractTokenFromContext extracts the token from the gRPC context
+func extractDeviceInfoFromContext(ctx context.Context) (context.Context, error) {
+	newCtx, err := updateContextWithKey(ctx, "device_id")
 	if err != nil {
-		return "", status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
+		newCtx = context.WithValue(ctx, "device_id", uuid.New().String())
 	}
 
-	if !parsedToken.Valid {
-		return "", status.Errorf(codes.Unauthenticated, "invalid token")
+	newCtx, err = updateContextWithKey(ctx, "device_name")
+	if err != nil {
+		return ctx, ErrMissingDeviceInfo
 	}
 
-	userID, ok := claims["user_id"].(string)
+	newCtx, err = updateContextWithKey(newCtx, "device_os")
+	if err != nil {
+		return ctx, ErrMissingDeviceInfo
+	}
+
+	newCtx, err = updateContextWithKey(newCtx, "device_os_version")
+	if err != nil {
+		return ctx, ErrMissingDeviceInfo
+	}
+
+	newCtx, err = updateContextWithKey(newCtx, "device_token")
+	if err != nil {
+		return ctx, ErrMissingDeviceInfo
+	}
+
+	return newCtx, nil
+}
+
+func updateContextWithKey(ctx context.Context, key string) (context.Context, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Errorf(codes.Unauthenticated, "invalid token claims")
+		return ctx, ErrMissingKey
 	}
 
-	return userID, nil
+	values := md.Get(key)
+	if len(values) == 0 {
+		return ctx, ErrMissingKey
+	}
+	newCtx := context.WithValue(ctx, key, values[0])
+
+	return newCtx, nil
+}
+
+// GetUserIDFromContext retrieves the user ID from the context
+func GetUserIDFromContext(ctx context.Context) (*uuid.UUID, error) {
+	id, ok := ctx.Value("user_id").(string)
+	if !ok {
+		return nil, errors.New("user ID not found in context")
+	}
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid user ID: %v", err)
+	}
+	return &userID, nil
+}
+
+// GetSessionIDFromContext retrieves the session ID from the context
+func GetSessionIDFromContext(ctx context.Context) (*uuid.UUID, error) {
+	id, ok := ctx.Value("session_id").(string)
+	if !ok {
+		return nil, errors.New("session ID not found in context")
+	}
+	sessionID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid session ID: %v", err)
+	}
+	return &sessionID, nil
+}
+
+// GetDeviceInfoFromContextWithUserID retrieves the device info from the context
+func GetDeviceInfoFromContextWithUserID(ctx context.Context, userID uuid.UUID) (*sessions.Device, error) {
+	deviceID, ok := ctx.Value("device_id").(string)
+	if !ok {
+		deviceID = uuid.New().String()
+	}
+
+	deviceName, ok := ctx.Value("device_name").(string)
+	if !ok {
+		return nil, errors.New("missing device name")
+	}
+
+	deviceOS, ok := ctx.Value("device_os").(string)
+	if !ok {
+		return nil, errors.New("missing device os")
+	}
+
+	deviceOSVersion, ok := ctx.Value("device_os_version").(string)
+	if !ok {
+		return nil, errors.New("missing device os version")
+	}
+
+	deviceToken, ok := ctx.Value("device_token").(string)
+	if !ok {
+		return nil, errors.New("missing device token")
+	}
+
+	return &sessions.Device{
+		ID:      uuid.MustParse(deviceID),
+		UserID:  userID,
+		Name:    deviceName,
+		Token:   deviceToken,
+		OS:      sessions.DeviceOS(deviceOS),
+		Version: deviceOSVersion,
+	}, nil
+}
+
+// GetDeviceInfoFromContext retrieves the device info from the context
+func GetDeviceInfoFromContext(ctx context.Context) (*sessions.Device, error) {
+	return GetDeviceInfoFromContextWithUserID(ctx, uuid.New())
+}
+
+func GetUserDataFromMeta(ctx context.Context) (*uuid.UUID, *uuid.UUID, *sessions.Device, error) {
+	userID, err := GetUserIDFromContext(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	sessionID, err := GetSessionIDFromContext(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	device, err := GetDeviceInfoFromContextWithUserID(ctx, *userID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return userID, sessionID, device, nil
 }
