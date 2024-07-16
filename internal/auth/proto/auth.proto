@@ -10,7 +10,8 @@ import "google/protobuf/empty.proto";
 service UserService {
   // User management
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
-  rpc GetUser(GetUserRequest) returns (User);
+  rpc GetUserById(GetUserByIdRequest) returns (User);
+  rpc GetUsersByUsername(GetUsersByUsernameRequest) returns (GetUsersByUsernameResponse);
   rpc UpdateUser(UpdateUserRequest) returns (User);
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
 
@@ -69,13 +70,18 @@ message CreateUserResponse {
   User user = 3;
 }
 
-message GetUserRequest {
-  oneof identifier {
-    string id = 1;
-    string email = 2;
-  }
+message GetUserByIdRequest {
+  string id = 1;
 }
 
+message GetUsersByUsernameRequest {
+  string username = 1;
+}
+
+message GetUsersByUsernameResponse {
+  string username = 1;
+  repeated User users = 2;
+}
 message UpdateUserRequest {
   string id = 1;
   optional string username = 2;

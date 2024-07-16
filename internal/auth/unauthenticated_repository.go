@@ -3,11 +3,9 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log/slog"
 	"speech/internal/auth/user"
 	"speech/internal/auth/verification"
 	"speech/internal/sessions"
@@ -103,40 +101,32 @@ func (u *unauthenticatedRepository) Login(
 	email, password string,
 	device *sessions.Device,
 ) (string, string, *user.User, error) {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return "", "", nil, status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
+	var accessToken, refreshToken string
+	var dbUser *user.User
 
-	reqIpAddr := getIpAddr(ctx)
-
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
+	var err error
+	err = withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		dbUser, err = u.userProvider.UserByEmail(email)
 		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
+			return status.Errorf(codes.NotFound, "User not found: %v", err)
 		}
-	}(tx) // Will be ignored if tx.Commit() is called
 
-	dbUser, err := u.userProvider.UserByEmail(email)
-	if err != nil {
-		return "", "", nil, status.Errorf(codes.NotFound, "User not found: %v", err)
-	}
+		if !verifyPassword(dbUser.PasswordHash, password) {
+			return status.Errorf(codes.Unauthenticated, "Invalid password")
+		}
 
-	if !verifyPassword(dbUser.PasswordHash, password) {
-		return "", "", nil, status.Errorf(codes.Unauthenticated, "Invalid password")
-	}
+		reqIpAddr := getIpAddr(ctx)
+		accessToken, refreshToken, _, err = u.createNewSession(dbUser, device, reqIpAddr, err, tx)
+		if err != nil {
+			return err
+		}
 
-	accessToken, refreshToken, _, err := u.createNewSession(dbUser, device, reqIpAddr, err, tx)
-	if err != nil {
-		return "", "", nil, err
-	}
+		return nil
+	})
 
-	err = tx.Commit()
 	if err != nil {
 		return "", "", nil, err
 	}
-
 	return accessToken, refreshToken, dbUser, nil
 }
 
@@ -145,70 +135,51 @@ func (u *unauthenticatedRepository) CreateUser(
 	email, password, username, bio string,
 	device *sessions.Device,
 ) (string, string, *user.User, string, time.Time, error) {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return "", "", nil, "", time.Now(), status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
+	var accessToken, refreshToken string
+	var dbUser *user.User
 
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
-		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
-		}
-	}(tx) // Will be ignored if tx.Commit() is called
-
-	start := time.Now()
-	hashedPassword, err := hashPassword(password)
-	if err != nil {
-		return "", "", nil, "", time.Now(), status.Errorf(codes.Internal, "Failed to hash password: %v", err)
-	}
-
-	timeElapsed := time.Since(start)
-	fmt.Printf("The hashPasswordtook %s", timeElapsed)
-	reqIpAddr := getIpAddr(ctx)
-
-	dbUser := &user.User{
-		ID:               uuid.New(),
-		Username:         username,
-		Bio:              sql.NullString{String: bio, Valid: true},
-		Email:            email,
-		PasswordHash:     hashedPassword,
-		IsVerified:       false,
-		AccountStatus:    "active",
-		TwoFactorEnabled: false,
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
-	}
-	
-	start = time.Now()
-	err = u.userSaver.SaveUser(tx, dbUser)
-	if err != nil {
-		return "", "", nil, "", time.Now(), status.Errorf(codes.Internal, "Failed to create user: %v", err)
-	}
-	
-	timeElapsed = time.Since(start)
-	fmt.Printf("The SaveUser %s", timeElapsed)
-	
-	start = time.Now()
 	code := generateVerificationCode()
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(15 * time.Minute)
+	err := withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		hashedPassword, err := hashPassword(password)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to hash password: %v", err)
+		}
 
-	err = storeVerificationEmail(u.verificationsSaver, tx, dbUser.ID, code, expirationTime)
-	if err != nil {
-		return "", "", nil, "", time.Now(), err
-	}
-	timeElapsed = time.Since(start)
-	fmt.Printf("The storeVerificationEmail %s", timeElapsed)
+		dbUser = &user.User{
+			ID:               uuid.New(),
+			Username:         username,
+			Bio:              sql.NullString{String: bio, Valid: true},
+			Email:            email,
+			PasswordHash:     hashedPassword,
+			IsVerified:       false,
+			AccountStatus:    "active",
+			TwoFactorEnabled: false,
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
+		}
 
-	accessToken, refreshToken, _, err := u.createNewSession(dbUser, device, reqIpAddr, err, tx)
-	if err != nil {
-		return "", "", nil, "", time.Now(), err
-	}
+		err = u.userSaver.SaveUser(tx, dbUser)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to create user: %v", err)
+		}
 
-	err = tx.Commit()
+		err = storeVerificationEmail(u.verificationsSaver, tx, dbUser.ID, code, expirationTime)
+		if err != nil {
+			return err
+		}
+
+		reqIpAddr := getIpAddr(ctx)
+		accessToken, refreshToken, _, err = u.createNewSession(dbUser, device, reqIpAddr, err, tx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return "", "", nil, "", time.Now(), err
+		return "", "", nil, "", time.Time{}, err
 	}
 
 	return accessToken, refreshToken, dbUser, code, expirationTime, nil
@@ -229,64 +200,33 @@ func (u *unauthenticatedRepository) RequestPasswordReset(
 	expirationTime time.Time,
 	device *sessions.Device,
 ) error {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
-
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
-		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
-		}
-	}(tx) // Will be ignored if tx.Commit() is called
-
-	err = u.verificationsSaver.StoreResetCode(
-		tx,
-		&verification.ResetCode{
-			UserID:    userID,
-			Code:      code,
-			CreatedAt: time.Now(),
-			ExpiresAt: expirationTime,
-			Used:      false,
-		},
-	)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to store reset code: %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		return u.verificationsSaver.StoreResetCode(
+			tx,
+			&verification.ResetCode{
+				UserID:    userID,
+				Code:      code,
+				CreatedAt: time.Now(),
+				ExpiresAt: expirationTime,
+				Used:      false,
+			},
+		)
+	})
 }
 func (u *unauthenticatedRepository) ResetPassword(ctx context.Context, updatedUser *user.User, device *sessions.Device) error {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
-
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		err := u.userUpdater.UpdatePassword(tx, &updatedUser.ID, updatedUser.PasswordHash)
 		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
+			return status.Errorf(codes.Internal, "Failed to update password: %v", err)
 		}
-	}(tx) // Will be ignored if tx.Commit() is called
 
-	err = u.userUpdater.UpdatePassword(tx, &updatedUser.ID, updatedUser.PasswordHash)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to update password: %v", err)
-	}
+		err = u.verificationsDeleter.DeleteResetCode(tx, &updatedUser.ID)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete reset code: %v", err)
+		}
 
-	err = u.verificationsDeleter.DeleteResetCode(tx, &updatedUser.ID)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to delete reset code: %v", err)
-	}
-	return nil
+		return nil
+	})
 }
 
 func (u *unauthenticatedRepository) GetResetPasswordCode(ctx context.Context, userID *uuid.UUID, code string) (*verification.ResetCode, error) {
@@ -297,111 +237,69 @@ func (u *unauthenticatedRepository) GetVerificationCode(ctx context.Context, use
 }
 
 func (u *unauthenticatedRepository) SendVerificationEmail(ctx context.Context, userID *uuid.UUID) (*user.User, error) {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
-
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
-		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
-		}
-	}(tx) // Will be ignored if tx.Commit() is called
-
-	//	empty, err2, done := u.verificationsSaver.StoreEmailVerification(tx)
-	//	if done {
-	//		return empty, err2
-	//	}
 
 	return nil, nil
 }
 func (u *unauthenticatedRepository) VerifyEmail(ctx context.Context, userID *uuid.UUID, code string) error {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
-
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		resetCode, err := u.verificationsProvider.GetEmailVerification(userID, code)
 		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
+			return status.Errorf(codes.NotFound, "Verification not found: %v", err)
 		}
-	}(tx) // Will be ignored if tx.Commit() is called
 
-	resetCode, err := u.verificationsProvider.GetEmailVerification(userID, code)
-	if err != nil {
-		return status.Errorf(codes.NotFound, "Verification not found: %v", err)
-	}
+		if resetCode.Used {
+			return status.Errorf(codes.AlreadyExists, "Verification code already used")
+		}
 
-	if resetCode.Used {
-		return status.Errorf(codes.AlreadyExists, "Verification code already used")
-	}
+		if resetCode.ExpiresAt.Before(time.Now()) {
+			return status.Errorf(codes.DeadlineExceeded, "Verification code has expired")
+		}
 
-	if resetCode.ExpiresAt.Before(time.Now()) {
-		return status.Errorf(codes.DeadlineExceeded, "Verification code has expired")
-	}
+		err = u.userUpdater.UpdateUserVerificationStatus(tx, userID, true)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to update user code status: %v", err)
+		}
 
-	err = u.userUpdater.UpdateUserVerificationStatus(tx, userID, true)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to update user code status: %v", err)
-	}
+		err = u.verificationsDeleter.DeleteEmailVerification(tx, userID)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete email code: %v", err)
+		}
 
-	err = u.verificationsDeleter.DeleteEmailVerification(tx, userID)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to delete email code: %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	return nil
+		return nil
+	})
 }
 
 func (u *unauthenticatedRepository) RefreshToken(ctx context.Context, token string, device *sessions.Device) (string, string, error) {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return "", "", status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
-
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
+	var newAccessToken, newRefreshToken string
+	err := withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		refreshToken, err := u.sessionsProvider.GetRefreshToken(token)
 		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
+			return status.Errorf(codes.Unauthenticated, "Invalid refresh token: %v", err)
 		}
-	}(tx) // Will be ignored if tx.Commit() is called
 
-	refreshToken, err := u.sessionsProvider.GetRefreshToken(token)
+		if refreshToken.ExpiresAt.Before(time.Now()) {
+			return status.Errorf(codes.Unauthenticated, "Refresh token has expired")
+		}
+
+		session, err := u.sessionsProvider.GetSessionByID(&refreshToken.SessionID)
+		if err != nil {
+			return err
+		}
+
+		newAccessToken, newRefreshToken, err = u.createNewRefreshToken(&refreshToken.UserID, session, tx, time.Now())
+		if err != nil {
+			return err
+		}
+
+		err = u.sessionsDeleter.DeleteRefreshToken(tx, token)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete old refresh token: %v", err)
+		}
+		return nil
+	})
+
 	if err != nil {
-		return "", "", status.Errorf(codes.Unauthenticated, "Invalid refresh token: %v", err)
-	}
-
-	if refreshToken.ExpiresAt.Before(time.Now()) {
-		return "", "", status.Errorf(codes.Unauthenticated, "Refresh token has expired")
-	}
-
-	session, err := u.sessionsProvider.GetSessionByID(&refreshToken.SessionID)
-	if err != nil {
-		return "", "", err
-	}
-
-	newAccessToken, newRefreshToken, err := u.createNewRefreshToken(&refreshToken.UserID, session, tx, time.Now())
-	if err != nil {
-		return "", "", err
-	}
-
-	err = u.sessionsDeleter.DeleteRefreshToken(tx, token)
-	if err != nil {
-		return "", "", status.Errorf(codes.Internal, "Failed to delete old refresh token: %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return "", "", err
+		return "", "", status.Errorf(codes.Internal, "Failed to refresh tokens: %v", err)
 	}
 
 	return newAccessToken, newRefreshToken, nil
@@ -441,6 +339,7 @@ func (u *unauthenticatedRepository) createNewSession(dbUser *user.User, device *
 	}
 	return accessToken, refreshToken, &session, nil
 }
+
 func (u *unauthenticatedRepository) createNewRefreshToken(userID *uuid.UUID, session *sessions.Session, tx *sql.Tx, currentTime time.Time) (string, string, error) {
 	accessToken, err := generateAccessToken(userID, &session.ID)
 	if err != nil {

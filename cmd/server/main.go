@@ -13,6 +13,8 @@ import (
 	"speech/internal/chat"
 )
 
+// TODO: add fully stream messaging service to update information about user's online status and etc
+
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {

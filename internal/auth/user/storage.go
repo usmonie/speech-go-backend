@@ -26,6 +26,7 @@ type Updater interface {
 type Provider interface {
 	UserByEmail(email string) (*User, error)
 	UserByID(id *uuid.UUID) (*User, error)
+	UserByUsername(username string) ([]*User, error)
 
 	UserAvatarHistory(userID *uuid.UUID) ([]AvatarHistory, error)
 	UserRoles(userID *uuid.UUID) ([]string, error)
@@ -36,7 +37,6 @@ type Provider interface {
 type Deleter interface {
 	DeleteUser(tx *sql.Tx, id *uuid.UUID) error
 	DeleteUnverifiedUsers(tx *sql.Tx, expirationTime time.Time) (int64, error)
-
 	RemoveUserRole(tx *sql.Tx, userID *uuid.UUID, role string) error
 }
 
@@ -149,6 +149,41 @@ func (r *PostgresStorage) UserByID(id *uuid.UUID) (*User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (r *PostgresStorage) UserByUsername(username string) ([]*User, error) {
+	rows, err := r.db.Query(`
+		SELECT id, username, email, password_hash, bio, current_avatar_url, is_verified, last_login,
+		       created_at, updated_at, account_status, two_factor_enabled, last_password_change
+		FROM users
+		WHERE username LIKE $1 || '%'
+		ORDER BY username
+		LIMIT 10`,
+		username,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []*User
+	for rows.Next() {
+		user := &User{}
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Bio, &user.CurrentAvatarURL,
+			&user.IsVerified, &user.LastLogin, &user.CreatedAt, &user.UpdatedAt, &user.AccountStatus,
+			&user.TwoFactorEnabled, &user.LastPasswordChange,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (r *PostgresStorage) UserAvatarHistory(userID *uuid.UUID) ([]AvatarHistory, error) {

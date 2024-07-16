@@ -6,8 +6,6 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log/slog"
-	"speech/internal/auth/proto"
 	"speech/internal/auth/user"
 	"speech/internal/auth/verification"
 	"speech/internal/sessions"
@@ -17,18 +15,26 @@ import (
 type AuthenticatedRepository interface {
 	UpdateUser(
 		ctx context.Context,
-		id *uuid.UUID,
+		userId *uuid.UUID,
 		sessionId *uuid.UUID,
 		username, email, bio *string,
 		device *sessions.Device,
 	) (*user.User, error)
 
-	GetUserByUsername(
+	GetUsersByUsername(
 		ctx context.Context,
 		userId *uuid.UUID,
 		sessionId *uuid.UUID,
 		device *sessions.Device,
 		username string,
+	) ([]*user.User, error)
+
+	GetUserById(
+		ctx context.Context,
+		userId *uuid.UUID,
+		sessionId *uuid.UUID,
+		device *sessions.Device,
+		requestedUserId *uuid.UUID,
 	) (*user.User, error)
 
 	DeleteUser(
@@ -65,10 +71,6 @@ type AuthenticatedRepository interface {
 		device *sessions.Device,
 	) error
 
-	AddUserDevice(ctx context.Context, userId *uuid.UUID, device *sessions.Device) (*sessions.Device, error)
-	GetUserDevices(ctx context.Context, userId *uuid.UUID) ([]*sessions.Device, error)
-	RemoveUserDevice(ctx context.Context, userId *uuid.UUID, deviceId uuid.UUID) error
-
 	AddUserRole(
 		ctx context.Context,
 		userID *uuid.UUID,
@@ -93,60 +95,6 @@ type authenticatedRepository struct {
 	sessionsUpdater  sessions.Updater
 	sessionsDeleter  sessions.Deleter
 	sessionsProvider sessions.Provider
-}
-
-func (u *authenticatedRepository) GetUserByUsername(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device, username string) (*user.User, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) UpdateUserAvatar(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device, avatarUrl string) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) GetUserAvatarHistory(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID) ([]*user.AvatarHistory, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) GetUserSessions(ctx context.Context, userID *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device) ([]*sessions.Session, error) {
-	return  u.sessionsProvider.GetUserSessions(userID)
-}
-
-func (u *authenticatedRepository) DeleteSession(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, deleteSessionId *uuid.UUID, device *sessions.Device) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) AddUserDevice(ctx context.Context, userId *uuid.UUID, device *sessions.Device) (*sessions.Device, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) GetUserDevices(ctx context.Context, userId *uuid.UUID) ([]*sessions.Device, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) RemoveUserDevice(ctx context.Context, userId *uuid.UUID, deviceId uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) AddUserRole(ctx context.Context, userID *uuid.UUID, role string) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) GetUserRoles(ctx context.Context, userID *uuid.UUID) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *authenticatedRepository) RemoveUserRole(ctx context.Context, userID *uuid.UUID, role string) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func NewAuthenticatedRepository(
@@ -183,107 +131,165 @@ func NewAuthenticatedRepository(
 	}
 }
 
-func (u *authenticatedRepository) UpdateUser(ctx context.Context, id *uuid.UUID, sessionId *uuid.UUID, username, email, bio *string, device *sessions.Device) (*user.User, error) {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
-	}
+func (u *authenticatedRepository) UpdateUser(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, username, email, bio *string, device *sessions.Device) (*user.User, error) {
+	var dbUser *user.User
+	var err error
+	err = u.withTransaction(ctx, userId, sessionId, func(tx *sql.Tx) error {
 
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
-		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
+		if username != nil {
+			dbUser.Username = *username
 		}
-	}(tx) // Will be ignored if tx.Commit() is called
+		if email != nil {
+			dbUser.Email = *email
+		}
+		if bio != nil {
+			dbUser.Bio = sql.NullString{String: *bio, Valid: true}
+		}
 
-	dbUser, err := u.userProvider.UserByID(id)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "User not found: %v", err)
-	}
+		dbUser.UpdatedAt = time.Now()
 
-	if username != nil {
-		dbUser.Username = *username
-	}
-	if email != nil {
-		dbUser.Email = *email
-	}
-	if bio != nil {
-		dbUser.Bio = sql.NullString{String: *bio, Valid: true}
-	}
+		err = u.userUpdater.UpdateUser(tx, dbUser)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to update user: %v", err)
+		}
+		return nil
+	})
 
-	dbUser.UpdatedAt = time.Now()
+	return dbUser, err
+}
 
-	err = u.userUpdater.UpdateUser(tx, dbUser)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to update user: %v", err)
-	}
+func (u *authenticatedRepository) GetUsersByUsername(
+	ctx context.Context,
+	userId *uuid.UUID,
+	sessionId *uuid.UUID,
+	device *sessions.Device,
+	username string,
+) ([]*user.User, error) {
+	var users []*user.User
+	var err error
+	err = u.withTransaction(ctx, userId, sessionId, func(tx *sql.Tx) error {
+		users, err = u.userProvider.UserByUsername(username)
+		if err != nil {
+			return err
+		}
 
-	err = tx.Commit()
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	return dbUser, nil
+	return users, nil
 }
 
-func (u *authenticatedRepository) GetUser(ctx context.Context, req *proto.GetUserRequest) (*user.User, error) {
-	var dbUser *user.User
+func (u *authenticatedRepository) GetUserById(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device, requestedUserId *uuid.UUID) (*user.User, error) {
+	var userDb *user.User
 	var err error
-
-	switch req.Identifier.(type) {
-	case *proto.GetUserRequest_Id:
-		userID, err := uuid.Parse(req.GetId())
+	err = u.withTransaction(ctx, userId, sessionId, func(tx *sql.Tx) error {
+		userDb, err = u.userProvider.UserByID(requestedUserId)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "Invalid user ID: %v", err)
+			return err
 		}
-		dbUser, err = u.userProvider.UserByID(&userID)
-	case *proto.GetUserRequest_Email:
-		dbUser, err = u.userProvider.UserByEmail(req.GetEmail())
-	default:
-		return nil, status.Error(codes.InvalidArgument, "Invalid identifier provided")
-	}
+
+		return nil
+	})
 
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "User not found: %v", err)
+		return nil, err
 	}
 
-	return dbUser, nil
+	return userDb, nil
 }
 
-func (u *authenticatedRepository) DeleteUser(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device) error {
-	// Start a database transaction
-	tx, err := u.BeginTx(ctx, nil)
+func (u *authenticatedRepository) GetUserByUsername(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device, username string) ([]*user.User, error) {
+	err := u.withTransaction(ctx, userId, sessionId, func(tx *sql.Tx) error {
+		return nil
+	})
 	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to start transaction: %v", err)
+		return nil, err
 	}
 
-	defer func(tx *sql.Tx) {
-		err = tx.Rollback()
-		if err != nil {
-			slog.Log(ctx, slog.LevelError, "Error while committing transaction", err)
-		}
-	}(tx) // Will be ignored if tx.Commit() is called
+	return u.userProvider.UserByUsername(username)
+}
 
-	err = u.userDeleter.DeleteUser(tx, userId)
-	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to delete user: %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
+func (u *authenticatedRepository) UpdateUserAvatar(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device, avatarUrl string) error {
 	return nil
 }
 
-func (u *unauthenticatedRepository) updateSession(ctx context.Context, tx *sql.Tx, sessionID *uuid.UUID) error {
+func (u *authenticatedRepository) GetUserAvatarHistory(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID) ([]*user.AvatarHistory, error) {
+	return nil, nil
+}
+
+func (u *authenticatedRepository) DeleteUser(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device) error {
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		err := u.userDeleter.DeleteUser(tx, userId)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete user: %v", err)
+		}
+		return nil
+	})
+}
+
+func (u *authenticatedRepository) GetUserSessions(ctx context.Context, userID *uuid.UUID, sessionId *uuid.UUID, device *sessions.Device) ([]*sessions.Session, error) {
+	return u.sessionsProvider.GetUserSessions(userID)
+}
+
+func (u *authenticatedRepository) DeleteSession(ctx context.Context, userId *uuid.UUID, sessionId *uuid.UUID, deleteSessionId *uuid.UUID, device *sessions.Device) error {
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		err := u.sessionsDeleter.DeleteSession(tx, deleteSessionId)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete user: %v", err)
+		}
+		return nil
+	})
+}
+
+func (u *authenticatedRepository) AddUserRole(ctx context.Context, userID *uuid.UUID, role string) error {
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		err := u.userSaver.AddUserRole(tx, userID, role)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete user: %v", err)
+		}
+		return nil
+	})
+}
+
+func (u *authenticatedRepository) GetUserRoles(ctx context.Context, userID *uuid.UUID) ([]string, error) {
+	return u.userProvider.UserRoles(userID)
+}
+
+func (u *authenticatedRepository) RemoveUserRole(ctx context.Context, userID *uuid.UUID, role string) error {
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		err := u.userDeleter.RemoveUserRole(tx, userID, role)
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to delete user: %v", err)
+		}
+		return nil
+	})
+}
+
+func (u *authenticatedRepository) withTransaction(ctx context.Context, userID, sessionID *uuid.UUID, operation func(*sql.Tx) error) error {
+	return withTransaction(u.DB, ctx, func(tx *sql.Tx) error {
+		err := u.updateSession(ctx, tx, userID, sessionID)
+		if err != nil {
+			return err
+		}
+
+		return operation(tx)
+	})
+}
+
+func (u *authenticatedRepository) updateSession(ctx context.Context, tx *sql.Tx, userId, sessionID *uuid.UUID) error {
+	_, err := u.userProvider.UserByID(userId)
+	if err != nil {
+		return status.Errorf(codes.NotFound, "User not found: %v", err)
+	}
 	ipAddr := getIpAddr(ctx)
 
-	err := u.sessionsUpdater.UpdateSessionIpAddr(tx, sessionID, ipAddr)
+	err = u.sessionsUpdater.UpdateSessionIpAddr(tx, sessionID, ipAddr)
 	if err != nil {
-		return err
+		return status.Errorf(codes.NotFound, "Error while updating session: %v", err)
 	}
 
 	return nil

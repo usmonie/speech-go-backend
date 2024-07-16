@@ -94,13 +94,18 @@ func (s *UserServiceServer) CreateUser(ctx context.Context, req *proto.CreateUse
 	}, nil
 }
 
-func (s *UserServiceServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.User, error) {
+func (s *UserServiceServer) GetUserById(ctx context.Context, req *proto.GetUserByIdRequest) (*proto.User, error) {
 	userID, sessionId, device, err := GetUserDataFromMeta(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	dbUser, err := s.authRepo.GetUserByUsername(ctx, userID, sessionId, device, req.GetEmail())
+	requestUserID, err := uuid.Parse(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Request user id is invalid: %v", err)
+	}
+
+	dbUser, err := s.authRepo.GetUserById(ctx, userID, sessionId, device, &requestUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -310,6 +315,29 @@ func (s *UserServiceServer) GetUserSessions(ctx context.Context, req *proto.GetU
 	}
 
 	return &proto.GetUserSessionsResponse{Sessions: protoSessions}, nil
+}
+
+func (s *UserServiceServer) GetUsersByUsername(ctx context.Context, req *proto.GetUsersByUsernameRequest) (*proto.GetUsersByUsernameResponse, error) {
+	userID, sessionID, device, err := GetUserDataFromMeta(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.GetUsername()) == 0 {
+		return nil, nil
+	}
+
+	dbUsers, err := s.authRepo.GetUsersByUsername(ctx, userID, sessionID, device, req.GetUsername())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get user sessions: %v", err)
+	}
+
+	users := make([]*proto.User, len(dbUsers))
+	for i, dbUser := range dbUsers {
+		users[i] = convertDBUserToProtoUser(dbUser)
+	}
+
+	return &proto.GetUsersByUsernameResponse{Username: req.GetUsername(), Users: users}, nil
 }
 
 func (s *UserServiceServer) DeleteSession(ctx context.Context, req *proto.DeleteSessionRequest) (*emptypb.Empty, error) {
