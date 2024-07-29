@@ -1,0 +1,403 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "/internal/proto/";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// User Account Service
+service UserAccountService {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (User);
+  rpc GetUsersByUsername(GetUsersByUsernameRequest) returns (GetUsersByUsernameResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (User);
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+}
+
+// Authentication Service
+service AuthenticationService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+}
+
+// Email Service
+service EmailService {
+  rpc SendVerificationEmail(SendVerificationEmailRequest) returns (google.protobuf.Empty);
+  rpc VerifyEmail(VerifyEmailRequest) returns (google.protobuf.Empty);
+}
+
+// Password Service
+service PasswordService {
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (google.protobuf.Empty);
+  rpc ResetPassword(ResetPasswordRequest) returns (google.protobuf.Empty);
+}
+
+// Session Management Service
+service SessionManagementService {
+  rpc GetUserSessions(GetUserSessionsRequest) returns (GetUserSessionsResponse);
+  rpc DeleteSession(DeleteSessionRequest) returns (google.protobuf.Empty);
+}
+
+// User Role Service
+service UserRoleService {
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse);
+  rpc AddUserRole(AddUserRoleRequest) returns (google.protobuf.Empty);
+  rpc RemoveUserRole(RemoveUserRoleRequest) returns (google.protobuf.Empty);
+}
+
+// Avatar Service
+service AvatarService {
+  rpc UpdateUserAvatar(UpdateUserAvatarRequest) returns (google.protobuf.Empty);
+  rpc GetUserAvatarHistory(GetUserAvatarHistoryRequest) returns (GetUserAvatarHistoryResponse);
+}
+
+// Key Management Service
+service KeyManagementService {
+  rpc UpdateUserKeys(UpdateUserKeysRequest) returns (google.protobuf.Empty);
+  rpc VerifyUserKey(VerifyUserKeyRequest) returns (google.protobuf.Empty);
+}
+
+// Device Management Service
+service DeviceManagementService {
+  rpc RevokeDevice(RevokeDeviceRequest) returns (google.protobuf.Empty);
+}
+
+// Account Recovery Service
+service AccountRecoveryService {
+  rpc InitiateAccountRecovery(InitiateAccountRecoveryRequest) returns (InitiateAccountRecoveryResponse);
+  rpc CompleteAccountRecovery(CompleteAccountRecoveryRequest) returns (google.protobuf.Empty);
+}
+
+// User Status Service
+service UserStatusService {
+  rpc StreamUserStatus(stream UserStatusUpdate) returns (stream UserStatusUpdate);
+}
+
+// Direct Messaging Service
+service DirectMessagingService {
+  rpc InitiateChat(InitiateChatRequest) returns (google.protobuf.Empty);
+  rpc SendMessage(SendMessageRequest) returns (google.protobuf.Empty);
+  rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse);
+  rpc RequestMissingMessages(RequestMissingMessagesRequest) returns (GetMessagesResponse);
+}
+
+// Group Chat Service
+service GroupChatService {
+  rpc CreateGroup(CreateGroupRequest) returns (google.protobuf.Empty);
+  rpc SendGroupMessage(GroupMessageRequest) returns (google.protobuf.Empty);
+  rpc UpdateGroupKey(UpdateGroupKeyRequest) returns (google.protobuf.Empty);
+  rpc AddGroupMember(AddGroupMemberRequest) returns (google.protobuf.Empty);
+  rpc RemoveGroupMember(RemoveGroupMemberRequest) returns (google.protobuf.Empty);
+  rpc RequestMissingGroupMessages(RequestMissingGroupMessagesRequest) returns (GetMessagesResponse);
+}
+
+// Chat History Service
+service ChatHistoryService {
+  rpc TransferChatHistory(TransferChatHistoryRequest) returns (TransferChatHistoryResponse);
+}
+
+// User-related messages
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  optional string bio = 4;
+  optional string current_avatar_url = 5;
+  bool is_verified = 6;
+  google.protobuf.Timestamp last_login = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  string account_status = 10;
+  bool two_factor_enabled = 11;
+  google.protobuf.Timestamp last_password_change = 12;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  optional string bio = 4;
+  bytes password_hmac = 3;
+  bytes salt = 5;
+  bytes public_identity_key = 6;
+  bytes public_signed_pre_key = 7;
+  bytes signed_pre_key_signature = 8;
+  repeated bytes public_one_time_pre_keys = 9;
+  bytes public_kyber_key = 10;
+  bytes encrypted_private_keys = 11;
+}
+
+message CreateUserResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  User user = 3;
+}
+
+message GetUserByIdRequest {
+  string id = 1;
+}
+
+message GetUsersByUsernameRequest {
+  string username = 1;
+}
+
+message GetUsersByUsernameResponse {
+  repeated User users = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  optional string username = 2;
+  optional string email = 3;
+  optional string bio = 4;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  User user = 3;
+}
+
+message LogoutRequest {
+  string access_token = 1;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message SendVerificationEmailRequest {
+  string user_id = 1;
+}
+
+message VerifyEmailRequest {
+  string email = 1;
+  string code = 2;
+}
+
+message RequestPasswordResetRequest {
+  string email = 1;
+}
+
+message ResetPasswordRequest {
+  string email = 1;
+  string code = 2;
+  string new_password = 3;
+}
+
+message GetUserSessionsRequest {
+  string user_id = 1;
+}
+
+message GetUserSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message Session {
+  string id = 1;
+  string user_id = 2;
+  string device_info = 3;
+  string ip_address = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+
+message DeleteSessionRequest {
+  string session_id = 1;
+}
+
+message GetUserRolesRequest {
+  string user_id = 1;
+}
+
+message GetUserRolesResponse {
+  repeated string roles = 1;
+}
+
+message AddUserRoleRequest {
+  string user_id = 1;
+  string role = 2;
+}
+
+message RemoveUserRoleRequest {
+  string user_id = 1;
+  string role = 2;
+}
+
+message UpdateUserAvatarRequest {
+  string user_id = 1;
+  string avatar_url = 2;
+}
+
+message GetUserAvatarHistoryRequest {
+  string user_id = 1;
+}
+
+message GetUserAvatarHistoryResponse {
+  repeated AvatarHistory history = 1;
+}
+
+message AvatarHistory {
+  string avatar_url = 1;
+  google.protobuf.Timestamp changed_at = 2;
+}
+
+message UpdateUserKeysRequest {
+  string user_id = 1;
+  bytes new_identity_public_key = 2;
+  bytes new_signed_pre_key_public = 3;
+  bytes new_signed_pre_key_signature = 4;
+  repeated bytes new_one_time_pre_keys_public = 5;
+  bytes new_kyber_public_key = 6;
+  bytes old_key_signature = 7;
+}
+
+message VerifyUserKeyRequest {
+  string verifier_id = 1;
+  string verified_id = 2;
+  int64 timestamp = 3;
+}
+
+message RevokeDeviceRequest {
+  string user_id = 1;
+  string device_id = 2;
+  bytes signature = 3;
+}
+
+message InitiateAccountRecoveryRequest {
+  string username_or_email = 1;
+  repeated string secret_question_answers = 2;
+  optional string recovery_code = 3;
+}
+
+message InitiateAccountRecoveryResponse {
+  string recovery_session_id = 1;
+}
+
+message CompleteAccountRecoveryRequest {
+  string recovery_session_id = 1;
+  string one_time_code = 2;
+  bytes new_identity_public_key = 3;
+  bytes new_signed_pre_key_public = 4;
+  bytes new_signed_pre_key_signature = 5;
+  repeated bytes new_one_time_pre_keys_public = 6;
+  bytes new_kyber_public_key = 7;
+}
+
+message UserStatusUpdate {
+  string user_id = 1;
+  bool is_online = 2;
+  google.protobuf.Timestamp last_seen = 3;
+}
+
+// Chat-related messages
+message InitiateChatRequest {
+  string sender_id = 1;
+  string recipient_id = 2;
+  bytes ephemeral_key = 3;
+  bytes kyber_ciphertext = 4;
+  bytes encrypted_message = 5;
+  optional string used_one_time_pre_key_id = 6;
+}
+
+message SendMessageRequest {
+  string sender_id = 1;
+  string recipient_id = 2;
+  bytes encrypted_message = 3;
+  bytes signature = 4;
+  bytes ratchet_public_key = 5;
+  int32 message_number = 6;
+  int32 previous_chain_length = 7;
+}
+
+message GetMessagesRequest {
+  string user_id = 1;
+  string last_message_id = 2;
+}
+
+message GetMessagesResponse {
+  repeated EncryptedMessage messages = 1;
+}
+
+message EncryptedMessage {
+  string message_id = 1;
+  string sender_id = 2;
+  string recipient_id = 3;
+  bytes encrypted_content = 4;
+  bytes signature = 5;
+  int32 message_number = 6;
+  google.protobuf.Timestamp timestamp = 7;
+}
+
+message RequestMissingMessagesRequest {
+  string recipient_id = 1;
+  string sender_id = 2;
+  repeated int32 missing_message_numbers = 3;
+}
+
+message CreateGroupRequest {
+  string creator_id = 1;
+  string group_name = 2;
+  repeated string members = 3;
+  repeated bytes encrypted_group_keys = 4;
+}
+
+message GroupMessageRequest {
+  string group_id = 1;
+  string sender_id = 2;
+  bytes encrypted_message = 3;
+  bytes signature = 4;
+  int32 message_number = 5;
+}
+
+message UpdateGroupKeyRequest {
+  string group_id = 1;
+  string initiator_id = 2;
+  repeated bytes encrypted_new_keys = 3;
+  int32 new_message_number = 4;
+}
+
+message AddGroupMemberRequest {
+  string group_id = 1;
+  string admin_id = 2;
+  string new_member_id = 3;
+}
+
+message RemoveGroupMemberRequest {
+  string group_id = 1;
+  string admin_id = 2;
+  string member_to_remove_id = 3;
+}
+
+message RequestMissingGroupMessagesRequest {
+  string group_id = 1;
+  string user_id = 2;
+  int32 last_received_message_number = 3;
+}
+
+message TransferChatHistoryRequest {
+  string user_id = 1;
+  string source_device_id = 2;
+  string target_device_id = 3;
+  bytes encrypted_temp_key = 4;
+}
+
+message TransferChatHistoryResponse {
+  bytes encrypted_history = 1;
+}

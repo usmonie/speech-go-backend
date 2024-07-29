@@ -3,6 +3,9 @@ package sessions
 import (
 	"database/sql"
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"time"
 )
 
 type Saver interface {
@@ -17,7 +20,8 @@ type Updater interface {
 
 type Provider interface {
 	GetRefreshToken(token string) (*RefreshToken, error)
-	GetSessionByID(sessionID *uuid.UUID) (*Session, error)
+	GetRefreshTokenBySessionId(sessionID *uuid.UUID, userId *uuid.UUID) (*RefreshToken, *Session, error)
+	GetSessionByID(sessionID *uuid.UUID, userId *uuid.UUID) (*Session, error)
 	GetUserSessions(userID *uuid.UUID) ([]*Session, error)
 	GetUserDevices(userID *uuid.UUID) ([]*Device, error)
 }
@@ -60,6 +64,23 @@ func (r *PostgresStorage) GetRefreshToken(token string) (*RefreshToken, error) {
 	return refreshToken, nil
 }
 
+func (r *PostgresStorage) GetRefreshTokenBySessionId(sessionId *uuid.UUID, userId *uuid.UUID) (*RefreshToken, *Session, error) {
+	session, err := r.GetSessionByID(sessionId, userId)
+	if err != nil {
+		return nil, nil, err
+	}
+	refreshToken := &RefreshToken{}
+	err = r.db.QueryRow(`
+		SELECT token, user_id, session_id, expires_at, created_at, device_info
+		FROM refresh_tokens WHERE session_id = $1 AND user_id = $2`, sessionId, userId).Scan(
+		&refreshToken.Token, &refreshToken.UserID, &refreshToken.SessionID,
+		&refreshToken.ExpiresAt, &refreshToken.CreatedAt, &refreshToken.DeviceInfo)
+	if err != nil {
+		return nil, nil, err
+	}
+	return refreshToken, session, nil
+}
+
 func (r *PostgresStorage) DeleteRefreshToken(tx *sql.Tx, token string) error {
 	_, err := tx.Exec("DELETE FROM refresh_tokens WHERE token = $1", token)
 	return err
@@ -78,7 +99,7 @@ func (r *PostgresStorage) UpdateSessionIpAddr(tx *sql.Tx, sessionID *uuid.UUID, 
 	return err
 }
 
-func (r *PostgresStorage) GetSessionByID(sessionID *uuid.UUID) (*Session, error) {
+func (r *PostgresStorage) GetSessionByID(sessionID *uuid.UUID, userId *uuid.UUID) (*Session, error) {
 	session := &Session{}
 	err := r.db.QueryRow(`
 		SELECT id, user_id, device_info, ip_address, created_at, expires_at
@@ -87,8 +108,17 @@ func (r *PostgresStorage) GetSessionByID(sessionID *uuid.UUID) (*Session, error)
 		sessionID,
 	).Scan(&session.ID, &session.UserID, &session.DeviceInfo, &session.IPAddress, &session.CreatedAt, &session.ExpiresAt)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "Failed to get session: %v", err)
 	}
+
+	if session.UserID != userId {
+		return nil, status.Error(codes.PermissionDenied, "User does not have access to this session")
+	}
+
+	if session.ExpiresAt.Before(time.Now()) {
+		return nil, status.Error(codes.PermissionDenied, "Session expired")
+	}
+
 	return session, nil
 }
 

@@ -19,20 +19,21 @@ const (
 
 type RefreshToken struct {
 	Token      string
-	UserID     uuid.UUID
-	SessionID  uuid.UUID
+	UserID     *uuid.UUID
+	SessionID  *uuid.UUID
 	ExpiresAt  time.Time
 	CreatedAt  time.Time
 	DeviceInfo sql.NullString
 }
 
 type Session struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	DeviceInfo string
-	IPAddress  string
-	CreatedAt  time.Time
-	ExpiresAt  time.Time
+	ID               *uuid.UUID
+	UserID           *uuid.UUID
+	DeviceInfo       string
+	IPAddress        string
+	CreatedAt        time.Time
+	ExpiresAt        time.Time
+	SessionSecretKey []byte
 }
 
 type Device struct {

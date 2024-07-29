@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "name": "SpeechWTF",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ],
+  "clientCertificates": {
+    "enabled": true,
+    "certs": [
+      {
+        "domain": "localhost:8443",
+        "type": "cert",
+        "certFilePath": "/Users/usmanakhmedov/FleetProjects/speech/client.crt",
+        "keyFilePath": "/Users/usmanakhmedov/FleetProjects/speech/client.key",
+        "passphrase": ""
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ import (
 )
 
 type EmailVerification struct {
-	UserID    uuid.UUID
+	UserID    *uuid.UUID
 	Code      string
 	CreatedAt time.Time
 	ExpiresAt time.Time
@@ -14,7 +14,7 @@ type EmailVerification struct {
 }
 
 type ResetCode struct {
-	UserID    uuid.UUID
+	UserID    *uuid.UUID
 	Code      string
 	CreatedAt time.Time
 	ExpiresAt time.Time

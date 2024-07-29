@@ -1,54 +1,24 @@
 package auth
 
 import (
-	"database/sql"
-	"speech/internal/auth/user"
-	"speech/internal/auth/verification"
-	"speech/internal/email"
-	"speech/internal/sessions"
-
 	"github.com/google/wire"
+	"speech/internal/sessions"
+	"speech/internal/user"
 )
 
-// ProvideUserStorage is a Wire provider function that creates a user.PostgresStorage
-func ProvideUserStorage(db *sql.DB) *user.PostgresStorage {
-	return user.NewUserPostgresStorage(db)
+func ProvideUseCase(
+	usersRepository user.Repository,
+	sessionsRepository sessions.Repository,
+) UseCase {
+	return NewAuthUseCase(usersRepository, sessionsRepository)
 }
 
-// ProvideVerificationStorage is a Wire provider function that creates a verification.PostgresStorage
-func ProvideVerificationStorage(db *sql.DB) *verification.PostgresStorage {
-	return verification.NewVerificationPostgresStorage(db)
+func ProvideAuthHandler(useCase UseCase) *Handler {
+	return NewAuthHandler(useCase)
 }
 
-// ProvideAuthenticatedRepository is a Wire provider function that creates a AuthenticatedRepository
-func ProvideAuthenticatedRepository(
-	db *sql.DB,
-	userStorage *user.PostgresStorage,
-	verificationStorage *verification.PostgresStorage,
-	sessionsStorage *sessions.PostgresStorage,
-) AuthenticatedRepository {
-	return NewAuthenticatedRepository(db, userStorage, userStorage, userStorage, userStorage, verificationStorage, verificationStorage, verificationStorage, sessionsStorage, sessionsStorage, sessionsStorage, sessionsStorage)
+func ProvideJSONHandler(useCase UseCase) *JSONHandler {
+	return NewJSONAuthHandler(useCase)
 }
 
-// ProvideUnauthenticatedRepository is a Wire provider function that creates a UnauthenticatedRepository
-func ProvideUnauthenticatedRepository(
-	db *sql.DB,
-	userStorage *user.PostgresStorage,
-	verificationStorage *verification.PostgresStorage,
-	sessionsStorage *sessions.PostgresStorage,
-) UnauthenticatedRepository {
-	return NewUnauthenticatedRepository(db, userStorage, userStorage, userStorage, verificationStorage, verificationStorage, verificationStorage, sessionsStorage, sessionsStorage, sessionsStorage, sessionsStorage)
-}
-
-// ProvideUserServiceServer is a Wire provider function that creates a UserServiceServer
-func ProvideUserServiceServer(authenticatedRepository AuthenticatedRepository, unauthenticatedRepository UnauthenticatedRepository, sender *email.Sender) *UserServiceServer {
-	return NewUserServiceServer(authenticatedRepository, unauthenticatedRepository, sender)
-}
-
-var Set = wire.NewSet(
-	ProvideUserStorage,
-	ProvideVerificationStorage,
-	ProvideAuthenticatedRepository,
-	ProvideUnauthenticatedRepository,
-	ProvideUserServiceServer,
-)
+var Set = wire.NewSet(ProvideUseCase, ProvideAuthHandler, ProvideJSONHandler)

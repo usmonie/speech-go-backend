@@ -9,25 +9,62 @@ package main
 import (
 	"database/sql"
 	"github.com/google/wire"
+	"google.golang.org/grpc/credentials"
 	"speech/config"
+	"speech/infrastructure/connection"
 	"speech/internal/auth"
 	"speech/internal/email"
 	"speech/internal/sessions"
+	"speech/internal/user"
 )
 
 // Injectors from wire.go:
 
-func InitializeAppWire(db *sql.DB, cfg *config.Config) *auth.UserServiceServer {
-	postgresStorage := auth.ProvideUserStorage(db)
-	verificationPostgresStorage := auth.ProvideVerificationStorage(db)
-	sessionsPostgresStorage := sessions.ProvideSessionsStorage(db)
-	authenticatedRepository := auth.ProvideAuthenticatedRepository(db, postgresStorage, verificationPostgresStorage, sessionsPostgresStorage)
-	unauthenticatedRepository := auth.ProvideUnauthenticatedRepository(db, postgresStorage, verificationPostgresStorage, sessionsPostgresStorage)
+func InitializeAppWire(db2 *sql.DB, cfg *config.Config) *AppServices {
+	postgresStorage := sessions.ProvideSessionsStorage(db2)
+	repository := sessions.ProvideRepository(db2, postgresStorage)
+	getSession := sessions.ProvideGetSession(repository)
+	transportCredentials := ProvideCreds(getSession)
+	storagePostgresStorage := user.ProvideUserStorage(db2)
+	userRepository := user.ProvideRepository(db2, storagePostgresStorage)
+	accountUseCase := user.ProvideAccountUseCase(userRepository)
+	handler := user.ProvideGrpcHandler(accountUseCase)
+	jsonHandler := user.ProvideJsonHandler(accountUseCase)
 	sender := email.ProvideEmailSender(cfg)
-	userServiceServer := auth.ProvideUserServiceServer(authenticatedRepository, unauthenticatedRepository, sender)
-	return userServiceServer
+	verificationPostgresStorage := user.ProvideVerificationStorage(db2)
+	emailRepository := email.ProvideRepository(db2, verificationPostgresStorage)
+	useCase := email.ProvideUseCase(userRepository, emailRepository)
+	emailHandler := email.ProvideHandler(sender, useCase)
+	emailJSONHandler := email.ProvideJSONHandler(useCase)
+	authUseCase := auth.ProvideUseCase(userRepository, repository)
+	authHandler := auth.ProvideAuthHandler(authUseCase)
+	authJSONHandler := auth.ProvideJSONHandler(authUseCase)
+	appServices := ProvideAppServices(transportCredentials, handler, jsonHandler, emailHandler, emailJSONHandler, authHandler, authJSONHandler)
+	return appServices
 }
 
 // wire.go:
 
-var AppSet = wire.NewSet(sessions.Set, email.Set, auth.Set)
+var AppSet = wire.NewSet(sessions.Set, email.Set, user.Set, auth.Set, ProvideCreds, ProvideAppServices)
+
+func ProvideAppServices(credentials2 credentials.TransportCredentials,
+
+	userHandler *user.Handler,
+	userJsonHandler *user.JSONHandler,
+	emailHandler *email.Handler,
+	emailJsonHandler *email.JSONHandler,
+	authHandler *auth.Handler,
+	authJSONHandler *auth.JSONHandler,
+) *AppServices {
+	return &AppServices{credentials2, authHandler,
+		authJSONHandler,
+		emailHandler,
+		emailJsonHandler,
+		userHandler,
+		userJsonHandler,
+	}
+}
+
+func ProvideCreds(getSession sessions.GetSession) credentials.TransportCredentials {
+	return connection.NewDynamicCreds(getSession, nil)
+}
