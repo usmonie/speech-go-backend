@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	serverAddr = flag.String("server_addr", "localhost:8080", "The server address in the format of host:port")
+	serverAddr = flag.String("server_addr", "0.0.0.0:8080", "The server address in the format of host:port")
 	certFile   = flag.String("/Users/usmanakhmedov/FleetProjects/speech/client.crt", "/Users/usmanakhmedov/FleetProjects/speech/client.crt", "The server TLS certificate file")
 )
 

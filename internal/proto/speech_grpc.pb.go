@@ -1632,591 +1632,1310 @@ var UserStatusService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	DirectMessagingService_InitiateChat_FullMethodName           = "/auth.DirectMessagingService/InitiateChat"
-	DirectMessagingService_SendMessage_FullMethodName            = "/auth.DirectMessagingService/SendMessage"
-	DirectMessagingService_GetMessages_FullMethodName            = "/auth.DirectMessagingService/GetMessages"
-	DirectMessagingService_RequestMissingMessages_FullMethodName = "/auth.DirectMessagingService/RequestMissingMessages"
+	ChatService_InitiateChat_FullMethodName                = "/auth.ChatService/InitiateChat"
+	ChatService_SendMessage_FullMethodName                 = "/auth.ChatService/SendMessage"
+	ChatService_ReceiveMessages_FullMethodName             = "/auth.ChatService/ReceiveMessages"
+	ChatService_UpdateMessageStatus_FullMethodName         = "/auth.ChatService/UpdateMessageStatus"
+	ChatService_ReplyToMessage_FullMethodName              = "/auth.ChatService/ReplyToMessage"
+	ChatService_ForwardMessage_FullMethodName              = "/auth.ChatService/ForwardMessage"
+	ChatService_DeleteMessage_FullMethodName               = "/auth.ChatService/DeleteMessage"
+	ChatService_RequestMissingMessages_FullMethodName      = "/auth.ChatService/RequestMissingMessages"
+	ChatService_CreatePublicGroupChat_FullMethodName       = "/auth.ChatService/CreatePublicGroupChat"
+	ChatService_CreatePrivateGroupChat_FullMethodName      = "/auth.ChatService/CreatePrivateGroupChat"
+	ChatService_JoinPublicGroupChat_FullMethodName         = "/auth.ChatService/JoinPublicGroupChat"
+	ChatService_CreateChatInvitation_FullMethodName        = "/auth.ChatService/CreateChatInvitation"
+	ChatService_JoinPrivateGroupChat_FullMethodName        = "/auth.ChatService/JoinPrivateGroupChat"
+	ChatService_UpdateGroupInfo_FullMethodName             = "/auth.ChatService/UpdateGroupInfo"
+	ChatService_AddGroupMember_FullMethodName              = "/auth.ChatService/AddGroupMember"
+	ChatService_RemoveGroupMember_FullMethodName           = "/auth.ChatService/RemoveGroupMember"
+	ChatService_UpdateGroupKey_FullMethodName              = "/auth.ChatService/UpdateGroupKey"
+	ChatService_SendGroupMessage_FullMethodName            = "/auth.ChatService/SendGroupMessage"
+	ChatService_RequestMissingGroupMessages_FullMethodName = "/auth.ChatService/RequestMissingGroupMessages"
+	ChatService_BanUser_FullMethodName                     = "/auth.ChatService/BanUser"
+	ChatService_UnbanUser_FullMethodName                   = "/auth.ChatService/UnbanUser"
+	ChatService_UpdateUserRole_FullMethodName              = "/auth.ChatService/UpdateUserRole"
+	ChatService_CreateCustomRole_FullMethodName            = "/auth.ChatService/CreateCustomRole"
+	ChatService_CreateInviteLink_FullMethodName            = "/auth.ChatService/CreateInviteLink"
+	ChatService_PinMessage_FullMethodName                  = "/auth.ChatService/PinMessage"
+	ChatService_UnpinMessage_FullMethodName                = "/auth.ChatService/UnpinMessage"
+	ChatService_CreateRoom_FullMethodName                  = "/auth.ChatService/CreateRoom"
+	ChatService_UpdateRoom_FullMethodName                  = "/auth.ChatService/UpdateRoom"
+	ChatService_DeleteRoom_FullMethodName                  = "/auth.ChatService/DeleteRoom"
+	ChatService_StreamUserStatus_FullMethodName            = "/auth.ChatService/StreamUserStatus"
+	ChatService_TransferChatHistory_FullMethodName         = "/auth.ChatService/TransferChatHistory"
 )
 
-// DirectMessagingServiceClient is the client API for DirectMessagingService service.
+// ChatServiceClient is the client API for ChatService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Direct Messaging Service
-type DirectMessagingServiceClient interface {
+// Updated ChatService
+type ChatServiceClient interface {
+	// Direct messaging
 	InitiateChat(ctx context.Context, in *InitiateChatRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
+	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
+	ReceiveMessages(ctx context.Context, in *ReceiveMessagesRequest, opts ...grpc.CallOption) (ChatService_ReceiveMessagesClient, error)
+	UpdateMessageStatus(ctx context.Context, in *UpdateMessageStatusRequest, opts ...grpc.CallOption) (*UpdateMessageStatusResponse, error)
+	ReplyToMessage(ctx context.Context, in *ReplyToMessageRequest, opts ...grpc.CallOption) (*ReplyToMessageResponse, error)
+	ForwardMessage(ctx context.Context, in *ForwardMessageRequest, opts ...grpc.CallOption) (*ForwardMessageResponse, error)
+	DeleteMessage(ctx context.Context, in *DeleteMessageRequest, opts ...grpc.CallOption) (*DeleteMessageResponse, error)
 	RequestMissingMessages(ctx context.Context, in *RequestMissingMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
+	// Group chat
+	CreatePublicGroupChat(ctx context.Context, in *CreatePublicGroupChatRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
+	CreatePrivateGroupChat(ctx context.Context, in *CreatePrivateGroupChatRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
+	JoinPublicGroupChat(ctx context.Context, in *JoinPublicGroupChatRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
+	CreateChatInvitation(ctx context.Context, in *CreateChatInvitationRequest, opts ...grpc.CallOption) (*CreateChatInvitationResponse, error)
+	JoinPrivateGroupChat(ctx context.Context, in *JoinPrivateGroupChatRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
+	UpdateGroupInfo(ctx context.Context, in *UpdateGroupInfoRequest, opts ...grpc.CallOption) (*UpdateGroupInfoResponse, error)
+	AddGroupMember(ctx context.Context, in *AddGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RemoveGroupMember(ctx context.Context, in *RemoveGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UpdateGroupKey(ctx context.Context, in *UpdateGroupKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	SendGroupMessage(ctx context.Context, in *GroupMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RequestMissingGroupMessages(ctx context.Context, in *RequestMissingGroupMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
+	// User management in chats
+	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
+	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
+	UpdateUserRole(ctx context.Context, in *UpdateUserRoleRequest, opts ...grpc.CallOption) (*UpdateUserRoleResponse, error)
+	CreateCustomRole(ctx context.Context, in *CreateCustomRoleRequest, opts ...grpc.CallOption) (*CreateCustomRoleResponse, error)
+	// Chat features
+	CreateInviteLink(ctx context.Context, in *CreateInviteLinkRequest, opts ...grpc.CallOption) (*CreateInviteLinkResponse, error)
+	PinMessage(ctx context.Context, in *PinMessageRequest, opts ...grpc.CallOption) (*PinMessageResponse, error)
+	UnpinMessage(ctx context.Context, in *UnpinMessageRequest, opts ...grpc.CallOption) (*UnpinMessageResponse, error)
+	// Room management
+	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
+	UpdateRoom(ctx context.Context, in *UpdateRoomRequest, opts ...grpc.CallOption) (*UpdateRoomResponse, error)
+	DeleteRoom(ctx context.Context, in *DeleteRoomRequest, opts ...grpc.CallOption) (*DeleteRoomResponse, error)
+	// User status
+	StreamUserStatus(ctx context.Context, opts ...grpc.CallOption) (ChatService_StreamUserStatusClient, error)
+	// Chat history
+	TransferChatHistory(ctx context.Context, in *TransferChatHistoryRequest, opts ...grpc.CallOption) (*TransferChatHistoryResponse, error)
 }
 
-type directMessagingServiceClient struct {
+type chatServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewDirectMessagingServiceClient(cc grpc.ClientConnInterface) DirectMessagingServiceClient {
-	return &directMessagingServiceClient{cc}
+func NewChatServiceClient(cc grpc.ClientConnInterface) ChatServiceClient {
+	return &chatServiceClient{cc}
 }
 
-func (c *directMessagingServiceClient) InitiateChat(ctx context.Context, in *InitiateChatRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *chatServiceClient) InitiateChat(ctx context.Context, in *InitiateChatRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, DirectMessagingService_InitiateChat_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatService_InitiateChat_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *directMessagingServiceClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *chatServiceClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendMessageResponse)
+	err := c.cc.Invoke(ctx, ChatService_SendMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) ReceiveMessages(ctx context.Context, in *ReceiveMessagesRequest, opts ...grpc.CallOption) (ChatService_ReceiveMessagesClient, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], ChatService_ReceiveMessages_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chatServiceReceiveMessagesClient{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ChatService_ReceiveMessagesClient interface {
+	Recv() (*EncryptedMessage, error)
+	grpc.ClientStream
+}
+
+type chatServiceReceiveMessagesClient struct {
+	grpc.ClientStream
+}
+
+func (x *chatServiceReceiveMessagesClient) Recv() (*EncryptedMessage, error) {
+	m := new(EncryptedMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *chatServiceClient) UpdateMessageStatus(ctx context.Context, in *UpdateMessageStatusRequest, opts ...grpc.CallOption) (*UpdateMessageStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMessageStatusResponse)
+	err := c.cc.Invoke(ctx, ChatService_UpdateMessageStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) ReplyToMessage(ctx context.Context, in *ReplyToMessageRequest, opts ...grpc.CallOption) (*ReplyToMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReplyToMessageResponse)
+	err := c.cc.Invoke(ctx, ChatService_ReplyToMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) ForwardMessage(ctx context.Context, in *ForwardMessageRequest, opts ...grpc.CallOption) (*ForwardMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForwardMessageResponse)
+	err := c.cc.Invoke(ctx, ChatService_ForwardMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) DeleteMessage(ctx context.Context, in *DeleteMessageRequest, opts ...grpc.CallOption) (*DeleteMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteMessageResponse)
+	err := c.cc.Invoke(ctx, ChatService_DeleteMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) RequestMissingMessages(ctx context.Context, in *RequestMissingMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMessagesResponse)
+	err := c.cc.Invoke(ctx, ChatService_RequestMissingMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) CreatePublicGroupChat(ctx context.Context, in *CreatePublicGroupChatRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupResponse)
+	err := c.cc.Invoke(ctx, ChatService_CreatePublicGroupChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) CreatePrivateGroupChat(ctx context.Context, in *CreatePrivateGroupChatRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupResponse)
+	err := c.cc.Invoke(ctx, ChatService_CreatePrivateGroupChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) JoinPublicGroupChat(ctx context.Context, in *JoinPublicGroupChatRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(JoinGroupResponse)
+	err := c.cc.Invoke(ctx, ChatService_JoinPublicGroupChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) CreateChatInvitation(ctx context.Context, in *CreateChatInvitationRequest, opts ...grpc.CallOption) (*CreateChatInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateChatInvitationResponse)
+	err := c.cc.Invoke(ctx, ChatService_CreateChatInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) JoinPrivateGroupChat(ctx context.Context, in *JoinPrivateGroupChatRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(JoinGroupResponse)
+	err := c.cc.Invoke(ctx, ChatService_JoinPrivateGroupChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) UpdateGroupInfo(ctx context.Context, in *UpdateGroupInfoRequest, opts ...grpc.CallOption) (*UpdateGroupInfoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateGroupInfoResponse)
+	err := c.cc.Invoke(ctx, ChatService_UpdateGroupInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) AddGroupMember(ctx context.Context, in *AddGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, DirectMessagingService_SendMessage_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatService_AddGroupMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *directMessagingServiceClient) GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error) {
+func (c *chatServiceClient) RemoveGroupMember(ctx context.Context, in *RemoveGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ChatService_RemoveGroupMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) UpdateGroupKey(ctx context.Context, in *UpdateGroupKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ChatService_UpdateGroupKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) SendGroupMessage(ctx context.Context, in *GroupMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ChatService_SendGroupMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) RequestMissingGroupMessages(ctx context.Context, in *RequestMissingGroupMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetMessagesResponse)
-	err := c.cc.Invoke(ctx, DirectMessagingService_GetMessages_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatService_RequestMissingGroupMessages_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *directMessagingServiceClient) RequestMissingMessages(ctx context.Context, in *RequestMissingMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error) {
+func (c *chatServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetMessagesResponse)
-	err := c.cc.Invoke(ctx, DirectMessagingService_RequestMissingMessages_FullMethodName, in, out, cOpts...)
+	out := new(BanUserResponse)
+	err := c.cc.Invoke(ctx, ChatService_BanUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DirectMessagingServiceServer is the server API for DirectMessagingService service.
-// All implementations must embed UnimplementedDirectMessagingServiceServer
+func (c *chatServiceClient) UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnbanUserResponse)
+	err := c.cc.Invoke(ctx, ChatService_UnbanUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) UpdateUserRole(ctx context.Context, in *UpdateUserRoleRequest, opts ...grpc.CallOption) (*UpdateUserRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserRoleResponse)
+	err := c.cc.Invoke(ctx, ChatService_UpdateUserRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) CreateCustomRole(ctx context.Context, in *CreateCustomRoleRequest, opts ...grpc.CallOption) (*CreateCustomRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCustomRoleResponse)
+	err := c.cc.Invoke(ctx, ChatService_CreateCustomRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) CreateInviteLink(ctx context.Context, in *CreateInviteLinkRequest, opts ...grpc.CallOption) (*CreateInviteLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateInviteLinkResponse)
+	err := c.cc.Invoke(ctx, ChatService_CreateInviteLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) PinMessage(ctx context.Context, in *PinMessageRequest, opts ...grpc.CallOption) (*PinMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PinMessageResponse)
+	err := c.cc.Invoke(ctx, ChatService_PinMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) UnpinMessage(ctx context.Context, in *UnpinMessageRequest, opts ...grpc.CallOption) (*UnpinMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnpinMessageResponse)
+	err := c.cc.Invoke(ctx, ChatService_UnpinMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateRoomResponse)
+	err := c.cc.Invoke(ctx, ChatService_CreateRoom_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) UpdateRoom(ctx context.Context, in *UpdateRoomRequest, opts ...grpc.CallOption) (*UpdateRoomResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateRoomResponse)
+	err := c.cc.Invoke(ctx, ChatService_UpdateRoom_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) DeleteRoom(ctx context.Context, in *DeleteRoomRequest, opts ...grpc.CallOption) (*DeleteRoomResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteRoomResponse)
+	err := c.cc.Invoke(ctx, ChatService_DeleteRoom_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatServiceClient) StreamUserStatus(ctx context.Context, opts ...grpc.CallOption) (ChatService_StreamUserStatusClient, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[1], ChatService_StreamUserStatus_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chatServiceStreamUserStatusClient{ClientStream: stream}
+	return x, nil
+}
+
+type ChatService_StreamUserStatusClient interface {
+	Send(*UserStatusUpdate) error
+	Recv() (*UserStatusUpdate, error)
+	grpc.ClientStream
+}
+
+type chatServiceStreamUserStatusClient struct {
+	grpc.ClientStream
+}
+
+func (x *chatServiceStreamUserStatusClient) Send(m *UserStatusUpdate) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chatServiceStreamUserStatusClient) Recv() (*UserStatusUpdate, error) {
+	m := new(UserStatusUpdate)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *chatServiceClient) TransferChatHistory(ctx context.Context, in *TransferChatHistoryRequest, opts ...grpc.CallOption) (*TransferChatHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TransferChatHistoryResponse)
+	err := c.cc.Invoke(ctx, ChatService_TransferChatHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ChatServiceServer is the server API for ChatService service.
+// All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
 //
-// Direct Messaging Service
-type DirectMessagingServiceServer interface {
+// Updated ChatService
+type ChatServiceServer interface {
+	// Direct messaging
 	InitiateChat(context.Context, *InitiateChatRequest) (*emptypb.Empty, error)
-	SendMessage(context.Context, *SendMessageRequest) (*emptypb.Empty, error)
-	GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error)
+	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
+	ReceiveMessages(*ReceiveMessagesRequest, ChatService_ReceiveMessagesServer) error
+	UpdateMessageStatus(context.Context, *UpdateMessageStatusRequest) (*UpdateMessageStatusResponse, error)
+	ReplyToMessage(context.Context, *ReplyToMessageRequest) (*ReplyToMessageResponse, error)
+	ForwardMessage(context.Context, *ForwardMessageRequest) (*ForwardMessageResponse, error)
+	DeleteMessage(context.Context, *DeleteMessageRequest) (*DeleteMessageResponse, error)
 	RequestMissingMessages(context.Context, *RequestMissingMessagesRequest) (*GetMessagesResponse, error)
-	mustEmbedUnimplementedDirectMessagingServiceServer()
+	// Group chat
+	CreatePublicGroupChat(context.Context, *CreatePublicGroupChatRequest) (*CreateGroupResponse, error)
+	CreatePrivateGroupChat(context.Context, *CreatePrivateGroupChatRequest) (*CreateGroupResponse, error)
+	JoinPublicGroupChat(context.Context, *JoinPublicGroupChatRequest) (*JoinGroupResponse, error)
+	CreateChatInvitation(context.Context, *CreateChatInvitationRequest) (*CreateChatInvitationResponse, error)
+	JoinPrivateGroupChat(context.Context, *JoinPrivateGroupChatRequest) (*JoinGroupResponse, error)
+	UpdateGroupInfo(context.Context, *UpdateGroupInfoRequest) (*UpdateGroupInfoResponse, error)
+	AddGroupMember(context.Context, *AddGroupMemberRequest) (*emptypb.Empty, error)
+	RemoveGroupMember(context.Context, *RemoveGroupMemberRequest) (*emptypb.Empty, error)
+	UpdateGroupKey(context.Context, *UpdateGroupKeyRequest) (*emptypb.Empty, error)
+	SendGroupMessage(context.Context, *GroupMessageRequest) (*emptypb.Empty, error)
+	RequestMissingGroupMessages(context.Context, *RequestMissingGroupMessagesRequest) (*GetMessagesResponse, error)
+	// User management in chats
+	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
+	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
+	UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*UpdateUserRoleResponse, error)
+	CreateCustomRole(context.Context, *CreateCustomRoleRequest) (*CreateCustomRoleResponse, error)
+	// Chat features
+	CreateInviteLink(context.Context, *CreateInviteLinkRequest) (*CreateInviteLinkResponse, error)
+	PinMessage(context.Context, *PinMessageRequest) (*PinMessageResponse, error)
+	UnpinMessage(context.Context, *UnpinMessageRequest) (*UnpinMessageResponse, error)
+	// Room management
+	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
+	UpdateRoom(context.Context, *UpdateRoomRequest) (*UpdateRoomResponse, error)
+	DeleteRoom(context.Context, *DeleteRoomRequest) (*DeleteRoomResponse, error)
+	// User status
+	StreamUserStatus(ChatService_StreamUserStatusServer) error
+	// Chat history
+	TransferChatHistory(context.Context, *TransferChatHistoryRequest) (*TransferChatHistoryResponse, error)
+	mustEmbedUnimplementedChatServiceServer()
 }
 
-// UnimplementedDirectMessagingServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedDirectMessagingServiceServer struct {
+// UnimplementedChatServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedChatServiceServer struct {
 }
 
-func (UnimplementedDirectMessagingServiceServer) InitiateChat(context.Context, *InitiateChatRequest) (*emptypb.Empty, error) {
+func (UnimplementedChatServiceServer) InitiateChat(context.Context, *InitiateChatRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InitiateChat not implemented")
 }
-func (UnimplementedDirectMessagingServiceServer) SendMessage(context.Context, *SendMessageRequest) (*emptypb.Empty, error) {
+func (UnimplementedChatServiceServer) SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
 }
-func (UnimplementedDirectMessagingServiceServer) GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMessages not implemented")
+func (UnimplementedChatServiceServer) ReceiveMessages(*ReceiveMessagesRequest, ChatService_ReceiveMessagesServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReceiveMessages not implemented")
 }
-func (UnimplementedDirectMessagingServiceServer) RequestMissingMessages(context.Context, *RequestMissingMessagesRequest) (*GetMessagesResponse, error) {
+func (UnimplementedChatServiceServer) UpdateMessageStatus(context.Context, *UpdateMessageStatusRequest) (*UpdateMessageStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMessageStatus not implemented")
+}
+func (UnimplementedChatServiceServer) ReplyToMessage(context.Context, *ReplyToMessageRequest) (*ReplyToMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReplyToMessage not implemented")
+}
+func (UnimplementedChatServiceServer) ForwardMessage(context.Context, *ForwardMessageRequest) (*ForwardMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForwardMessage not implemented")
+}
+func (UnimplementedChatServiceServer) DeleteMessage(context.Context, *DeleteMessageRequest) (*DeleteMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteMessage not implemented")
+}
+func (UnimplementedChatServiceServer) RequestMissingMessages(context.Context, *RequestMissingMessagesRequest) (*GetMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestMissingMessages not implemented")
 }
-func (UnimplementedDirectMessagingServiceServer) mustEmbedUnimplementedDirectMessagingServiceServer() {
+func (UnimplementedChatServiceServer) CreatePublicGroupChat(context.Context, *CreatePublicGroupChatRequest) (*CreateGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePublicGroupChat not implemented")
 }
+func (UnimplementedChatServiceServer) CreatePrivateGroupChat(context.Context, *CreatePrivateGroupChatRequest) (*CreateGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePrivateGroupChat not implemented")
+}
+func (UnimplementedChatServiceServer) JoinPublicGroupChat(context.Context, *JoinPublicGroupChatRequest) (*JoinGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JoinPublicGroupChat not implemented")
+}
+func (UnimplementedChatServiceServer) CreateChatInvitation(context.Context, *CreateChatInvitationRequest) (*CreateChatInvitationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateChatInvitation not implemented")
+}
+func (UnimplementedChatServiceServer) JoinPrivateGroupChat(context.Context, *JoinPrivateGroupChatRequest) (*JoinGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JoinPrivateGroupChat not implemented")
+}
+func (UnimplementedChatServiceServer) UpdateGroupInfo(context.Context, *UpdateGroupInfoRequest) (*UpdateGroupInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateGroupInfo not implemented")
+}
+func (UnimplementedChatServiceServer) AddGroupMember(context.Context, *AddGroupMemberRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddGroupMember not implemented")
+}
+func (UnimplementedChatServiceServer) RemoveGroupMember(context.Context, *RemoveGroupMemberRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveGroupMember not implemented")
+}
+func (UnimplementedChatServiceServer) UpdateGroupKey(context.Context, *UpdateGroupKeyRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateGroupKey not implemented")
+}
+func (UnimplementedChatServiceServer) SendGroupMessage(context.Context, *GroupMessageRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendGroupMessage not implemented")
+}
+func (UnimplementedChatServiceServer) RequestMissingGroupMessages(context.Context, *RequestMissingGroupMessagesRequest) (*GetMessagesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestMissingGroupMessages not implemented")
+}
+func (UnimplementedChatServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BanUser not implemented")
+}
+func (UnimplementedChatServiceServer) UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnbanUser not implemented")
+}
+func (UnimplementedChatServiceServer) UpdateUserRole(context.Context, *UpdateUserRoleRequest) (*UpdateUserRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserRole not implemented")
+}
+func (UnimplementedChatServiceServer) CreateCustomRole(context.Context, *CreateCustomRoleRequest) (*CreateCustomRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateCustomRole not implemented")
+}
+func (UnimplementedChatServiceServer) CreateInviteLink(context.Context, *CreateInviteLinkRequest) (*CreateInviteLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateInviteLink not implemented")
+}
+func (UnimplementedChatServiceServer) PinMessage(context.Context, *PinMessageRequest) (*PinMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PinMessage not implemented")
+}
+func (UnimplementedChatServiceServer) UnpinMessage(context.Context, *UnpinMessageRequest) (*UnpinMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnpinMessage not implemented")
+}
+func (UnimplementedChatServiceServer) CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRoom not implemented")
+}
+func (UnimplementedChatServiceServer) UpdateRoom(context.Context, *UpdateRoomRequest) (*UpdateRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateRoom not implemented")
+}
+func (UnimplementedChatServiceServer) DeleteRoom(context.Context, *DeleteRoomRequest) (*DeleteRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRoom not implemented")
+}
+func (UnimplementedChatServiceServer) StreamUserStatus(ChatService_StreamUserStatusServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamUserStatus not implemented")
+}
+func (UnimplementedChatServiceServer) TransferChatHistory(context.Context, *TransferChatHistoryRequest) (*TransferChatHistoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransferChatHistory not implemented")
+}
+func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 
-// UnsafeDirectMessagingServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to DirectMessagingServiceServer will
+// UnsafeChatServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ChatServiceServer will
 // result in compilation errors.
-type UnsafeDirectMessagingServiceServer interface {
-	mustEmbedUnimplementedDirectMessagingServiceServer()
+type UnsafeChatServiceServer interface {
+	mustEmbedUnimplementedChatServiceServer()
 }
 
-func RegisterDirectMessagingServiceServer(s grpc.ServiceRegistrar, srv DirectMessagingServiceServer) {
-	s.RegisterService(&DirectMessagingService_ServiceDesc, srv)
+func RegisterChatServiceServer(s grpc.ServiceRegistrar, srv ChatServiceServer) {
+	s.RegisterService(&ChatService_ServiceDesc, srv)
 }
 
-func _DirectMessagingService_InitiateChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_InitiateChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InitiateChatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DirectMessagingServiceServer).InitiateChat(ctx, in)
+		return srv.(ChatServiceServer).InitiateChat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DirectMessagingService_InitiateChat_FullMethodName,
+		FullMethod: ChatService_InitiateChat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DirectMessagingServiceServer).InitiateChat(ctx, req.(*InitiateChatRequest))
+		return srv.(ChatServiceServer).InitiateChat(ctx, req.(*InitiateChatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DirectMessagingService_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SendMessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DirectMessagingServiceServer).SendMessage(ctx, in)
+		return srv.(ChatServiceServer).SendMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DirectMessagingService_SendMessage_FullMethodName,
+		FullMethod: ChatService_SendMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DirectMessagingServiceServer).SendMessage(ctx, req.(*SendMessageRequest))
+		return srv.(ChatServiceServer).SendMessage(ctx, req.(*SendMessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DirectMessagingService_GetMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMessagesRequest)
+func _ChatService_ReceiveMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReceiveMessagesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChatServiceServer).ReceiveMessages(m, &chatServiceReceiveMessagesServer{ServerStream: stream})
+}
+
+type ChatService_ReceiveMessagesServer interface {
+	Send(*EncryptedMessage) error
+	grpc.ServerStream
+}
+
+type chatServiceReceiveMessagesServer struct {
+	grpc.ServerStream
+}
+
+func (x *chatServiceReceiveMessagesServer) Send(m *EncryptedMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _ChatService_UpdateMessageStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMessageStatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DirectMessagingServiceServer).GetMessages(ctx, in)
+		return srv.(ChatServiceServer).UpdateMessageStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DirectMessagingService_GetMessages_FullMethodName,
+		FullMethod: ChatService_UpdateMessageStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DirectMessagingServiceServer).GetMessages(ctx, req.(*GetMessagesRequest))
+		return srv.(ChatServiceServer).UpdateMessageStatus(ctx, req.(*UpdateMessageStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DirectMessagingService_RequestMissingMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_ReplyToMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReplyToMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).ReplyToMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_ReplyToMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).ReplyToMessage(ctx, req.(*ReplyToMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_ForwardMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForwardMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).ForwardMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_ForwardMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).ForwardMessage(ctx, req.(*ForwardMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_DeleteMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).DeleteMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_DeleteMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).DeleteMessage(ctx, req.(*DeleteMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_RequestMissingMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestMissingMessagesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DirectMessagingServiceServer).RequestMissingMessages(ctx, in)
+		return srv.(ChatServiceServer).RequestMissingMessages(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DirectMessagingService_RequestMissingMessages_FullMethodName,
+		FullMethod: ChatService_RequestMissingMessages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DirectMessagingServiceServer).RequestMissingMessages(ctx, req.(*RequestMissingMessagesRequest))
+		return srv.(ChatServiceServer).RequestMissingMessages(ctx, req.(*RequestMissingMessagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// DirectMessagingService_ServiceDesc is the grpc.ServiceDesc for DirectMessagingService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var DirectMessagingService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "auth.DirectMessagingService",
-	HandlerType: (*DirectMessagingServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "InitiateChat",
-			Handler:    _DirectMessagingService_InitiateChat_Handler,
-		},
-		{
-			MethodName: "SendMessage",
-			Handler:    _DirectMessagingService_SendMessage_Handler,
-		},
-		{
-			MethodName: "GetMessages",
-			Handler:    _DirectMessagingService_GetMessages_Handler,
-		},
-		{
-			MethodName: "RequestMissingMessages",
-			Handler:    _DirectMessagingService_RequestMissingMessages_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/proto/speech.proto",
-}
-
-const (
-	GroupChatService_CreateGroup_FullMethodName                 = "/auth.GroupChatService/CreateGroup"
-	GroupChatService_SendGroupMessage_FullMethodName            = "/auth.GroupChatService/SendGroupMessage"
-	GroupChatService_UpdateGroupKey_FullMethodName              = "/auth.GroupChatService/UpdateGroupKey"
-	GroupChatService_AddGroupMember_FullMethodName              = "/auth.GroupChatService/AddGroupMember"
-	GroupChatService_RemoveGroupMember_FullMethodName           = "/auth.GroupChatService/RemoveGroupMember"
-	GroupChatService_RequestMissingGroupMessages_FullMethodName = "/auth.GroupChatService/RequestMissingGroupMessages"
-)
-
-// GroupChatServiceClient is the client API for GroupChatService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Group Chat Service
-type GroupChatServiceClient interface {
-	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	SendGroupMessage(ctx context.Context, in *GroupMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	UpdateGroupKey(ctx context.Context, in *UpdateGroupKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	AddGroupMember(ctx context.Context, in *AddGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	RemoveGroupMember(ctx context.Context, in *RemoveGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	RequestMissingGroupMessages(ctx context.Context, in *RequestMissingGroupMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
-}
-
-type groupChatServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewGroupChatServiceClient(cc grpc.ClientConnInterface) GroupChatServiceClient {
-	return &groupChatServiceClient{cc}
-}
-
-func (c *groupChatServiceClient) CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, GroupChatService_CreateGroup_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *groupChatServiceClient) SendGroupMessage(ctx context.Context, in *GroupMessageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, GroupChatService_SendGroupMessage_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *groupChatServiceClient) UpdateGroupKey(ctx context.Context, in *UpdateGroupKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, GroupChatService_UpdateGroupKey_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *groupChatServiceClient) AddGroupMember(ctx context.Context, in *AddGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, GroupChatService_AddGroupMember_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *groupChatServiceClient) RemoveGroupMember(ctx context.Context, in *RemoveGroupMemberRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, GroupChatService_RemoveGroupMember_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *groupChatServiceClient) RequestMissingGroupMessages(ctx context.Context, in *RequestMissingGroupMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetMessagesResponse)
-	err := c.cc.Invoke(ctx, GroupChatService_RequestMissingGroupMessages_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// GroupChatServiceServer is the server API for GroupChatService service.
-// All implementations must embed UnimplementedGroupChatServiceServer
-// for forward compatibility
-//
-// Group Chat Service
-type GroupChatServiceServer interface {
-	CreateGroup(context.Context, *CreateGroupRequest) (*emptypb.Empty, error)
-	SendGroupMessage(context.Context, *GroupMessageRequest) (*emptypb.Empty, error)
-	UpdateGroupKey(context.Context, *UpdateGroupKeyRequest) (*emptypb.Empty, error)
-	AddGroupMember(context.Context, *AddGroupMemberRequest) (*emptypb.Empty, error)
-	RemoveGroupMember(context.Context, *RemoveGroupMemberRequest) (*emptypb.Empty, error)
-	RequestMissingGroupMessages(context.Context, *RequestMissingGroupMessagesRequest) (*GetMessagesResponse, error)
-	mustEmbedUnimplementedGroupChatServiceServer()
-}
-
-// UnimplementedGroupChatServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedGroupChatServiceServer struct {
-}
-
-func (UnimplementedGroupChatServiceServer) CreateGroup(context.Context, *CreateGroupRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateGroup not implemented")
-}
-func (UnimplementedGroupChatServiceServer) SendGroupMessage(context.Context, *GroupMessageRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SendGroupMessage not implemented")
-}
-func (UnimplementedGroupChatServiceServer) UpdateGroupKey(context.Context, *UpdateGroupKeyRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateGroupKey not implemented")
-}
-func (UnimplementedGroupChatServiceServer) AddGroupMember(context.Context, *AddGroupMemberRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddGroupMember not implemented")
-}
-func (UnimplementedGroupChatServiceServer) RemoveGroupMember(context.Context, *RemoveGroupMemberRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveGroupMember not implemented")
-}
-func (UnimplementedGroupChatServiceServer) RequestMissingGroupMessages(context.Context, *RequestMissingGroupMessagesRequest) (*GetMessagesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RequestMissingGroupMessages not implemented")
-}
-func (UnimplementedGroupChatServiceServer) mustEmbedUnimplementedGroupChatServiceServer() {}
-
-// UnsafeGroupChatServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GroupChatServiceServer will
-// result in compilation errors.
-type UnsafeGroupChatServiceServer interface {
-	mustEmbedUnimplementedGroupChatServiceServer()
-}
-
-func RegisterGroupChatServiceServer(s grpc.ServiceRegistrar, srv GroupChatServiceServer) {
-	s.RegisterService(&GroupChatService_ServiceDesc, srv)
-}
-
-func _GroupChatService_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateGroupRequest)
+func _ChatService_CreatePublicGroupChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePublicGroupChatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GroupChatServiceServer).CreateGroup(ctx, in)
+		return srv.(ChatServiceServer).CreatePublicGroupChat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GroupChatService_CreateGroup_FullMethodName,
+		FullMethod: ChatService_CreatePublicGroupChat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupChatServiceServer).CreateGroup(ctx, req.(*CreateGroupRequest))
+		return srv.(ChatServiceServer).CreatePublicGroupChat(ctx, req.(*CreatePublicGroupChatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupChatService_SendGroupMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GroupMessageRequest)
+func _ChatService_CreatePrivateGroupChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePrivateGroupChatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GroupChatServiceServer).SendGroupMessage(ctx, in)
+		return srv.(ChatServiceServer).CreatePrivateGroupChat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GroupChatService_SendGroupMessage_FullMethodName,
+		FullMethod: ChatService_CreatePrivateGroupChat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupChatServiceServer).SendGroupMessage(ctx, req.(*GroupMessageRequest))
+		return srv.(ChatServiceServer).CreatePrivateGroupChat(ctx, req.(*CreatePrivateGroupChatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupChatService_UpdateGroupKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateGroupKeyRequest)
+func _ChatService_JoinPublicGroupChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinPublicGroupChatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GroupChatServiceServer).UpdateGroupKey(ctx, in)
+		return srv.(ChatServiceServer).JoinPublicGroupChat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GroupChatService_UpdateGroupKey_FullMethodName,
+		FullMethod: ChatService_JoinPublicGroupChat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupChatServiceServer).UpdateGroupKey(ctx, req.(*UpdateGroupKeyRequest))
+		return srv.(ChatServiceServer).JoinPublicGroupChat(ctx, req.(*JoinPublicGroupChatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupChatService_AddGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_CreateChatInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateChatInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).CreateChatInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_CreateChatInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).CreateChatInvitation(ctx, req.(*CreateChatInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_JoinPrivateGroupChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinPrivateGroupChatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).JoinPrivateGroupChat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_JoinPrivateGroupChat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).JoinPrivateGroupChat(ctx, req.(*JoinPrivateGroupChatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_UpdateGroupInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGroupInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).UpdateGroupInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_UpdateGroupInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).UpdateGroupInfo(ctx, req.(*UpdateGroupInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_AddGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddGroupMemberRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GroupChatServiceServer).AddGroupMember(ctx, in)
+		return srv.(ChatServiceServer).AddGroupMember(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GroupChatService_AddGroupMember_FullMethodName,
+		FullMethod: ChatService_AddGroupMember_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupChatServiceServer).AddGroupMember(ctx, req.(*AddGroupMemberRequest))
+		return srv.(ChatServiceServer).AddGroupMember(ctx, req.(*AddGroupMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupChatService_RemoveGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_RemoveGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveGroupMemberRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GroupChatServiceServer).RemoveGroupMember(ctx, in)
+		return srv.(ChatServiceServer).RemoveGroupMember(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GroupChatService_RemoveGroupMember_FullMethodName,
+		FullMethod: ChatService_RemoveGroupMember_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupChatServiceServer).RemoveGroupMember(ctx, req.(*RemoveGroupMemberRequest))
+		return srv.(ChatServiceServer).RemoveGroupMember(ctx, req.(*RemoveGroupMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupChatService_RequestMissingGroupMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_UpdateGroupKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGroupKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).UpdateGroupKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_UpdateGroupKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).UpdateGroupKey(ctx, req.(*UpdateGroupKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_SendGroupMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).SendGroupMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_SendGroupMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).SendGroupMessage(ctx, req.(*GroupMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_RequestMissingGroupMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestMissingGroupMessagesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GroupChatServiceServer).RequestMissingGroupMessages(ctx, in)
+		return srv.(ChatServiceServer).RequestMissingGroupMessages(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GroupChatService_RequestMissingGroupMessages_FullMethodName,
+		FullMethod: ChatService_RequestMissingGroupMessages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupChatServiceServer).RequestMissingGroupMessages(ctx, req.(*RequestMissingGroupMessagesRequest))
+		return srv.(ChatServiceServer).RequestMissingGroupMessages(ctx, req.(*RequestMissingGroupMessagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// GroupChatService_ServiceDesc is the grpc.ServiceDesc for GroupChatService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var GroupChatService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "auth.GroupChatService",
-	HandlerType: (*GroupChatServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "CreateGroup",
-			Handler:    _GroupChatService_CreateGroup_Handler,
-		},
-		{
-			MethodName: "SendGroupMessage",
-			Handler:    _GroupChatService_SendGroupMessage_Handler,
-		},
-		{
-			MethodName: "UpdateGroupKey",
-			Handler:    _GroupChatService_UpdateGroupKey_Handler,
-		},
-		{
-			MethodName: "AddGroupMember",
-			Handler:    _GroupChatService_AddGroupMember_Handler,
-		},
-		{
-			MethodName: "RemoveGroupMember",
-			Handler:    _GroupChatService_RemoveGroupMember_Handler,
-		},
-		{
-			MethodName: "RequestMissingGroupMessages",
-			Handler:    _GroupChatService_RequestMissingGroupMessages_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/proto/speech.proto",
-}
-
-const (
-	ChatHistoryService_TransferChatHistory_FullMethodName = "/auth.ChatHistoryService/TransferChatHistory"
-)
-
-// ChatHistoryServiceClient is the client API for ChatHistoryService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Chat History Service
-type ChatHistoryServiceClient interface {
-	TransferChatHistory(ctx context.Context, in *TransferChatHistoryRequest, opts ...grpc.CallOption) (*TransferChatHistoryResponse, error)
-}
-
-type chatHistoryServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewChatHistoryServiceClient(cc grpc.ClientConnInterface) ChatHistoryServiceClient {
-	return &chatHistoryServiceClient{cc}
-}
-
-func (c *chatHistoryServiceClient) TransferChatHistory(ctx context.Context, in *TransferChatHistoryRequest, opts ...grpc.CallOption) (*TransferChatHistoryResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TransferChatHistoryResponse)
-	err := c.cc.Invoke(ctx, ChatHistoryService_TransferChatHistory_FullMethodName, in, out, cOpts...)
-	if err != nil {
+func _ChatService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BanUserRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return out, nil
+	if interceptor == nil {
+		return srv.(ChatServiceServer).BanUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_BanUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).BanUser(ctx, req.(*BanUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-// ChatHistoryServiceServer is the server API for ChatHistoryService service.
-// All implementations must embed UnimplementedChatHistoryServiceServer
-// for forward compatibility
-//
-// Chat History Service
-type ChatHistoryServiceServer interface {
-	TransferChatHistory(context.Context, *TransferChatHistoryRequest) (*TransferChatHistoryResponse, error)
-	mustEmbedUnimplementedChatHistoryServiceServer()
+func _ChatService_UnbanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnbanUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).UnbanUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_UnbanUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).UnbanUser(ctx, req.(*UnbanUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-// UnimplementedChatHistoryServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedChatHistoryServiceServer struct {
+func _ChatService_UpdateUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).UpdateUserRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_UpdateUserRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).UpdateUserRole(ctx, req.(*UpdateUserRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func (UnimplementedChatHistoryServiceServer) TransferChatHistory(context.Context, *TransferChatHistoryRequest) (*TransferChatHistoryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TransferChatHistory not implemented")
+func _ChatService_CreateCustomRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCustomRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).CreateCustomRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_CreateCustomRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).CreateCustomRole(ctx, req.(*CreateCustomRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
-func (UnimplementedChatHistoryServiceServer) mustEmbedUnimplementedChatHistoryServiceServer() {}
 
-// UnsafeChatHistoryServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ChatHistoryServiceServer will
-// result in compilation errors.
-type UnsafeChatHistoryServiceServer interface {
-	mustEmbedUnimplementedChatHistoryServiceServer()
+func _ChatService_CreateInviteLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateInviteLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).CreateInviteLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_CreateInviteLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).CreateInviteLink(ctx, req.(*CreateInviteLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func RegisterChatHistoryServiceServer(s grpc.ServiceRegistrar, srv ChatHistoryServiceServer) {
-	s.RegisterService(&ChatHistoryService_ServiceDesc, srv)
+func _ChatService_PinMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PinMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).PinMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_PinMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).PinMessage(ctx, req.(*PinMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _ChatHistoryService_TransferChatHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_UnpinMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnpinMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).UnpinMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_UnpinMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).UnpinMessage(ctx, req.(*UnpinMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_CreateRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).CreateRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_CreateRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).CreateRoom(ctx, req.(*CreateRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_UpdateRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).UpdateRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_UpdateRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).UpdateRoom(ctx, req.(*UpdateRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_DeleteRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).DeleteRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_DeleteRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).DeleteRoom(ctx, req.(*DeleteRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_StreamUserStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChatServiceServer).StreamUserStatus(&chatServiceStreamUserStatusServer{ServerStream: stream})
+}
+
+type ChatService_StreamUserStatusServer interface {
+	Send(*UserStatusUpdate) error
+	Recv() (*UserStatusUpdate, error)
+	grpc.ServerStream
+}
+
+type chatServiceStreamUserStatusServer struct {
+	grpc.ServerStream
+}
+
+func (x *chatServiceStreamUserStatusServer) Send(m *UserStatusUpdate) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chatServiceStreamUserStatusServer) Recv() (*UserStatusUpdate, error) {
+	m := new(UserStatusUpdate)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _ChatService_TransferChatHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TransferChatHistoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChatHistoryServiceServer).TransferChatHistory(ctx, in)
+		return srv.(ChatServiceServer).TransferChatHistory(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ChatHistoryService_TransferChatHistory_FullMethodName,
+		FullMethod: ChatService_TransferChatHistory_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChatHistoryServiceServer).TransferChatHistory(ctx, req.(*TransferChatHistoryRequest))
+		return srv.(ChatServiceServer).TransferChatHistory(ctx, req.(*TransferChatHistoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// ChatHistoryService_ServiceDesc is the grpc.ServiceDesc for ChatHistoryService service.
+// ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ChatHistoryService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "auth.ChatHistoryService",
-	HandlerType: (*ChatHistoryServiceServer)(nil),
+var ChatService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "auth.ChatService",
+	HandlerType: (*ChatServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "InitiateChat",
+			Handler:    _ChatService_InitiateChat_Handler,
+		},
+		{
+			MethodName: "SendMessage",
+			Handler:    _ChatService_SendMessage_Handler,
+		},
+		{
+			MethodName: "UpdateMessageStatus",
+			Handler:    _ChatService_UpdateMessageStatus_Handler,
+		},
+		{
+			MethodName: "ReplyToMessage",
+			Handler:    _ChatService_ReplyToMessage_Handler,
+		},
+		{
+			MethodName: "ForwardMessage",
+			Handler:    _ChatService_ForwardMessage_Handler,
+		},
+		{
+			MethodName: "DeleteMessage",
+			Handler:    _ChatService_DeleteMessage_Handler,
+		},
+		{
+			MethodName: "RequestMissingMessages",
+			Handler:    _ChatService_RequestMissingMessages_Handler,
+		},
+		{
+			MethodName: "CreatePublicGroupChat",
+			Handler:    _ChatService_CreatePublicGroupChat_Handler,
+		},
+		{
+			MethodName: "CreatePrivateGroupChat",
+			Handler:    _ChatService_CreatePrivateGroupChat_Handler,
+		},
+		{
+			MethodName: "JoinPublicGroupChat",
+			Handler:    _ChatService_JoinPublicGroupChat_Handler,
+		},
+		{
+			MethodName: "CreateChatInvitation",
+			Handler:    _ChatService_CreateChatInvitation_Handler,
+		},
+		{
+			MethodName: "JoinPrivateGroupChat",
+			Handler:    _ChatService_JoinPrivateGroupChat_Handler,
+		},
+		{
+			MethodName: "UpdateGroupInfo",
+			Handler:    _ChatService_UpdateGroupInfo_Handler,
+		},
+		{
+			MethodName: "AddGroupMember",
+			Handler:    _ChatService_AddGroupMember_Handler,
+		},
+		{
+			MethodName: "RemoveGroupMember",
+			Handler:    _ChatService_RemoveGroupMember_Handler,
+		},
+		{
+			MethodName: "UpdateGroupKey",
+			Handler:    _ChatService_UpdateGroupKey_Handler,
+		},
+		{
+			MethodName: "SendGroupMessage",
+			Handler:    _ChatService_SendGroupMessage_Handler,
+		},
+		{
+			MethodName: "RequestMissingGroupMessages",
+			Handler:    _ChatService_RequestMissingGroupMessages_Handler,
+		},
+		{
+			MethodName: "BanUser",
+			Handler:    _ChatService_BanUser_Handler,
+		},
+		{
+			MethodName: "UnbanUser",
+			Handler:    _ChatService_UnbanUser_Handler,
+		},
+		{
+			MethodName: "UpdateUserRole",
+			Handler:    _ChatService_UpdateUserRole_Handler,
+		},
+		{
+			MethodName: "CreateCustomRole",
+			Handler:    _ChatService_CreateCustomRole_Handler,
+		},
+		{
+			MethodName: "CreateInviteLink",
+			Handler:    _ChatService_CreateInviteLink_Handler,
+		},
+		{
+			MethodName: "PinMessage",
+			Handler:    _ChatService_PinMessage_Handler,
+		},
+		{
+			MethodName: "UnpinMessage",
+			Handler:    _ChatService_UnpinMessage_Handler,
+		},
+		{
+			MethodName: "CreateRoom",
+			Handler:    _ChatService_CreateRoom_Handler,
+		},
+		{
+			MethodName: "UpdateRoom",
+			Handler:    _ChatService_UpdateRoom_Handler,
+		},
+		{
+			MethodName: "DeleteRoom",
+			Handler:    _ChatService_DeleteRoom_Handler,
+		},
+		{
 			MethodName: "TransferChatHistory",
-			Handler:    _ChatHistoryService_TransferChatHistory_Handler,
+			Handler:    _ChatService_TransferChatHistory_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ReceiveMessages",
+			Handler:       _ChatService_ReceiveMessages_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamUserStatus",
+			Handler:       _ChatService_StreamUserStatus_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "internal/proto/speech.proto",
 }

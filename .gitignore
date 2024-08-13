@@ -30,3 +30,4 @@ config/config.go
 *.crt
 *.key
 *.csr
+*/.DS_Store

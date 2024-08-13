@@ -6,8 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
-	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"net/http"
@@ -19,6 +17,9 @@ import (
 	"speech/internal/user"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
+	"google.golang.org/grpc/status"
 
 	"speech/config"
 	"speech/infrastructure/connection"
