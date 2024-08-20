@@ -54,10 +54,12 @@ service AvatarService {
   rpc GetUserAvatarHistory(GetUserAvatarHistoryRequest) returns (GetUserAvatarHistoryResponse);
 }
 
-// Key Management Service
+// Updated Key Management Service
 service KeyManagementService {
   rpc UpdateUserKeys(UpdateUserKeysRequest) returns (google.protobuf.Empty);
   rpc VerifyUserKey(VerifyUserKeyRequest) returns (google.protobuf.Empty);
+  rpc GeneratePostQuantumKeys(GeneratePostQuantumKeysRequest) returns (GeneratePostQuantumKeysResponse);
+  rpc PerformKeyExchange(PerformKeyExchangeRequest) returns (PerformKeyExchangeResponse);
 }
 
 // Device Management Service
@@ -79,7 +81,7 @@ service UserStatusService {
 // Updated ChatService
 service ChatService {
   // Direct messaging
-  rpc InitiateChat(InitiateChatRequest) returns (google.protobuf.Empty);
+  rpc InitiateSecureChat(InitiateSecureChatRequest) returns (InitiateSecureChatResponse);
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
   rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream EncryptedMessage);
   rpc UpdateMessageStatus(UpdateMessageStatusRequest) returns (UpdateMessageStatusResponse);
@@ -97,7 +99,7 @@ service ChatService {
   rpc UpdateGroupInfo(UpdateGroupInfoRequest) returns (UpdateGroupInfoResponse);
   rpc AddGroupMember(AddGroupMemberRequest) returns (google.protobuf.Empty);
   rpc RemoveGroupMember(RemoveGroupMemberRequest) returns (google.protobuf.Empty);
-  rpc UpdateGroupKey(UpdateGroupKeyRequest) returns (google.protobuf.Empty);
+  rpc UpdateGroupEncryption(UpdateGroupEncryptionRequest) returns (google.protobuf.Empty);
   rpc SendGroupMessage(GroupMessageRequest) returns (google.protobuf.Empty);
   rpc RequestMissingGroupMessages(RequestMissingGroupMessagesRequest) returns (GetMessagesResponse);
 
@@ -117,14 +119,60 @@ service ChatService {
   rpc UpdateRoom(UpdateRoomRequest) returns (UpdateRoomResponse);
   rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse);
 
-  // User status
-  rpc StreamUserStatus(stream UserStatusUpdate) returns (stream UserStatusUpdate);
-
   // Chat history
   rpc TransferChatHistory(TransferChatHistoryRequest) returns (TransferChatHistoryResponse);
 }
 
-// User-related messages
+// New service for network management
+service NetworkManagementService {
+  rpc RegisterNode(RegisterNodeRequest) returns (RegisterNodeResponse);
+  rpc UpdateNodeStatus(UpdateNodeStatusRequest) returns (google.protobuf.Empty);
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (NodeInfo);
+}
+
+// New service for DHT operations
+service DHTService {
+  rpc Put(DHTPutRequest) returns (google.protobuf.Empty);
+  rpc Get(DHTGetRequest) returns (DHTGetResponse);
+  rpc FindNode(FindNodeRequest) returns (FindNodeResponse);
+}
+
+// New service for reputation management
+service ReputationService {
+  rpc UpdateNodeReputation(UpdateNodeReputationRequest) returns (google.protobuf.Empty);
+  rpc GetNodeReputation(GetNodeReputationRequest) returns (GetNodeReputationResponse);
+}
+
+// Enums
+
+enum EncryptionAlgorithm {
+  ED521 = 0;
+  AES_256_GCM = 1;
+  SHA3_256 = 2;
+  KYBER1024 = 3;
+  DILITHIUM3 = 4;
+}
+
+enum NodeType {
+  FULL_NODE = 0;
+  LIGHT_NODE = 1;
+  SERVICE_NODE = 2;
+}
+
+enum NodeStatus {
+  ONLINE = 0;
+  OFFLINE = 1;
+  BUSY = 2;
+}
+
+enum MessageStatus {
+  SENT = 0;
+  DELIVERED = 1;
+  READ = 2;
+}
+
+// Message definitions
+
 message User {
   string id = 1;
   string username = 2;
@@ -143,8 +191,8 @@ message User {
 message CreateUserRequest {
   string username = 1;
   string email = 2;
-  optional string bio = 4;
-  bytes password_hmac = 3;
+  optional string bio = 3;
+  bytes password_hmac = 4;
   bytes salt = 5;
   bytes public_identity_key = 6;
   bytes public_signed_pre_key = 7;
@@ -299,6 +347,28 @@ message VerifyUserKeyRequest {
   int64 timestamp = 3;
 }
 
+message GeneratePostQuantumKeysRequest {
+  string user_id = 1;
+}
+
+message GeneratePostQuantumKeysResponse {
+  bytes public_kyber_key = 1;
+  bytes encrypted_private_kyber_key = 2;
+  bytes public_dilithium_key = 3;
+  bytes encrypted_private_dilithium_key = 4;
+}
+
+message PerformKeyExchangeRequest {
+  string initiator_id = 1;
+  string recipient_id = 2;
+  bytes ephemeral_key = 3;
+  bytes kyber_ciphertext = 4;
+}
+
+message PerformKeyExchangeResponse {
+  bytes shared_secret = 1;
+}
+
 message RevokeDeviceRequest {
   string user_id = 1;
   string device_id = 2;
@@ -331,14 +401,18 @@ message UserStatusUpdate {
   google.protobuf.Timestamp last_seen = 3;
 }
 
-// Chat-related messages
-message InitiateChatRequest {
+message InitiateSecureChatRequest {
   string sender_id = 1;
   string recipient_id = 2;
   bytes ephemeral_key = 3;
   bytes kyber_ciphertext = 4;
-  bytes encrypted_message = 5;
+  bytes encrypted_initial_message = 5;
   optional string used_one_time_pre_key_id = 6;
+}
+
+message InitiateSecureChatResponse {
+  string chat_id = 1;
+  bytes encrypted_response = 2;
 }
 
 message SendMessageRequest {
@@ -388,12 +462,6 @@ message UpdateMessageStatusRequest {
 
 message UpdateMessageStatusResponse {
   bool success = 1;
-}
-
-enum MessageStatus {
-  SENT = 0;
-  DELIVERED = 1;
-  READ = 2;
 }
 
 message ReplyToMessageRequest {
@@ -496,7 +564,7 @@ message RemoveGroupMemberRequest {
   string member_to_remove_id = 3;
 }
 
-message UpdateGroupKeyRequest {
+message UpdateGroupEncryptionRequest {
   string group_id = 1;
   string initiator_id = 2;
   repeated bytes encrypted_new_keys = 3;
@@ -631,4 +699,71 @@ message TransferChatHistoryRequest {
 
 message TransferChatHistoryResponse {
   bytes encrypted_history = 1;
+}
+
+// New messages for network management, DHT, and reputation
+
+message NodeInfo {
+  string node_id = 1;
+  NodeType node_type = 2;
+  string ip_address = 3;
+  int32 port = 4;
+  repeated string capabilities = 5;
+  google.protobuf.Timestamp last_seen = 6;
+}
+
+message RegisterNodeRequest {
+  NodeInfo node_info = 1;
+  bytes public_key = 2;
+  bytes signature = 3;
+}
+
+message RegisterNodeResponse {
+  string node_id = 1;
+  bytes network_certificate = 2;
+}
+
+message UpdateNodeStatusRequest {
+  string node_id = 1;
+  NodeStatus status = 2;
+}
+
+message GetNodeInfoRequest {
+  string node_id = 1;
+}
+
+message DHTPutRequest {
+  bytes key = 1;
+  bytes value = 2;
+  google.protobuf.Timestamp expiration = 3;
+}
+
+message DHTGetRequest {
+  bytes key = 1;
+}
+
+message DHTGetResponse {
+  bytes value = 1;
+}
+
+message FindNodeRequest {
+  bytes node_id = 1;
+}
+
+message FindNodeResponse {
+  repeated NodeInfo closest_nodes = 1;
+}
+
+message UpdateNodeReputationRequest {
+  string node_id = 1;
+  int32 reputation_change = 2;
+  string reason = 3;
+}
+
+message GetNodeReputationRequest {
+  string node_id = 1;
+}
+
+message GetNodeReputationResponse {
+  int32 reputation_score = 1;
 }
