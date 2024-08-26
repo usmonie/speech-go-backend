@@ -27,15 +27,15 @@ func ArgonPassword(password, salt []byte) []byte {
 }
 
 func HmacPassword(password, salt []byte) ([]byte, error) {
-	encryptionKey := ArgonPassword(password, salt)
-	authKeyReader := hkdf.New(sha512.New, encryptionKey, salt, []byte("Auth"))
+	encryption_key := ArgonPassword(password, salt)
+	auth_key_reader := hkdf.New(sha512.New, encryption_key, salt, []byte("Auth"))
 
-	authKey := make([]byte, 32)
-	_, err := authKeyReader.Read(authKey)
+	auth_key := make([]byte, 32)
+	_, err := auth_key_reader.Read(auth_key)
 	if err != nil {
 		return nil, err
 	}
-	passwordHmac := ComputeHMAC(authKey, []byte("Login"))
+	passwordHmac := ComputeHMAC(auth_key, []byte("Login"))
 
 	return passwordHmac, nil
 }

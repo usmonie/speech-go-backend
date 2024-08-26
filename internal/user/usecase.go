@@ -40,6 +40,8 @@ func (uc *AccountUseCase) CreateUser(
 		return "", "", nil, infrastructure.ErrUserAlreadyExists
 	}
 
+	println("UserRepository Exist")
+
 	// Create user
 	now := time.Now()
 	user := &User{
@@ -70,6 +72,8 @@ func (uc *AccountUseCase) CreateUser(
 	if err != nil {
 		return "", "", nil, err
 	}
+
+	println("SessionsRepository Exist")
 
 	return accessToken, refreshToken, user, nil
 }

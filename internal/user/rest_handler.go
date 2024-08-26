@@ -33,8 +33,12 @@ func (h *JSONHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		EncryptedPrivateKeys  []byte   `json:"encrypted_private_keys"`
 	}
 
+	println("CreateUser Request")
+	print(r.Body)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		println(err.Error())
 		return
 	}
 
@@ -53,10 +57,12 @@ func (h *JSONHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		req.PublicOneTimePreKeys,
 		req.EncryptedPrivateKeys,
 	)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	println("UserUseCase Exist")
 
 	response := struct {
 		User         *User  `json:"user"`

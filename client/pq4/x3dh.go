@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"math/big"
+
+	"github.com/cloudflare/circl/kem"
 )
 
 type PreKeyBundle struct {
@@ -14,27 +16,50 @@ type PreKeyBundle struct {
 	SignedPreKeyId  uint32
 	OneTimePreKeyId uint32
 	SignedPreKeySig []byte
+	KyberPublicKey  []byte
 }
 
-func GeneratePreKeyBundle(identityKey *big.Int, identityPubKey *E521Point) (*PreKeyBundle, error) {
+type PrivateKeyBundle struct {
+	SignedPreKeyPrivate  *big.Int
+	OneTimePreKeyPrivate *big.Int
+	KyberPrivateKey      kem.PrivateKey
+}
+
+func GeneratePreKeyBundle(identityKey *big.Int, identityPubKey *E521Point) (*PreKeyBundle, *PrivateKeyBundle, error) {
 	// Generate signed pre-key
-	_, signedPreKeyPub, err := GenerateE521KeyPair()
+	signedPreKeyPriv, signedPreKeyPub, err := GenerateE521KeyPair()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Generate one-time pre-key
-	_, oneTimePreKeyPub, err := GenerateE521KeyPair()
+	oneTimePreKeyPriv, oneTimePreKeyPub, err := GenerateE521KeyPair()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	// Generate Kyber key pair
+	kyberPublicKey, kyberPrivateKey, err := GenerateKyberKeyPair()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Sign the signed pre-key
 	signedPreKeySig, err := SignMessage(identityKey, SerializePoint(signedPreKeyPub))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	privateKeyBundle := &PrivateKeyBundle{
+		SignedPreKeyPrivate:  signedPreKeyPriv,
+		OneTimePreKeyPrivate: oneTimePreKeyPriv,
+		KyberPrivateKey:      kyberPrivateKey,
+	}
+
+	kyberPublicMarshal, err := kyberPublicKey.MarshalBinary()
+	if err != nil {
+		return nil, nil, err
+	}
 	return &PreKeyBundle{
 		IdentityKey:     identityPubKey,
 		SignedPreKey:    signedPreKeyPub,
@@ -42,7 +67,8 @@ func GeneratePreKeyBundle(identityKey *big.Int, identityPubKey *E521Point) (*Pre
 		SignedPreKeyId:  generateRandomId(),
 		OneTimePreKeyId: generateRandomId(),
 		SignedPreKeySig: signedPreKeySig,
-	}, nil
+		KyberPublicKey:  kyberPublicMarshal,
+	}, privateKeyBundle, nil
 }
 
 func PerformX3DH(ourIdentityKey *big.Int, ourIdentityPubKey, ourEphemeralPubKey *E521Point, theirBundle *PreKeyBundle) ([]byte, error) {

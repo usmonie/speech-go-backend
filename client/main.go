@@ -1,195 +1,179 @@
 package main
 
 import (
-	"context"
+	"bytes"
 	"crypto/rand"
+	"crypto/sha512"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
-	"flag"
-	"github.com/cloudflare/circl/kem/kyber/kyber1024"
-	"google.golang.org/grpc/credentials"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
+	"net/http"
+
 	"speech_client/pq4"
-	"time"
 
-	"google.golang.org/grpc"
-	pb "speech_client/proto"
+	"github.com/cloudflare/circl/kem/kyber/kyber1024"
+	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/hkdf"
 )
 
-var (
-	serverAddr = flag.String("server_addr", "0.0.0.0:8080", "The server address in the format of host:port")
-	certFile   = flag.String("/Users/usmanakhmedov/FleetProjects/speech/client.crt", "/Users/usmanakhmedov/FleetProjects/speech/client.crt", "The server TLS certificate file")
-)
+// Assuming these functions are implemented in your pq4 package
 
 func main() {
-	flag.Parse()
-
-	// Load the server's certificate
-	cert, err := ioutil.ReadFile(*certFile)
-	if err != nil {
-		log.Fatalf("Failed to read certificate: %v", err)
-	}
-
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(cert) {
-		log.Fatalf("Failed to add server certificate to pool")
-	}
-
-	// Create TLS credentials
-	creds := credentials.NewTLS(&tls.Config{
-		RootCAs: certPool,
-	})
-
-	// Establish a connection to the server
-	conn, err := grpc.NewClient(*serverAddr, grpc.WithTransportCredentials(creds))
-	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
-	}
-	defer conn.Close()
-
-	// Create clients for each service
-	userClient := pb.NewUserAccountServiceClient(conn)
-	authClient := pb.NewAuthenticationServiceClient(conn)
-
-	// Demonstrate user registration
-	user, err := registerUser(userClient)
-	if err != nil {
-		log.Fatalf("Failed to register user: %v", err)
-	}
-	log.Printf("Registered user: %v", user.Username)
-
-	// Demonstrate user login
-	tokens, err := loginUser(authClient, user.Email, "password123")
-	if err != nil {
-		log.Fatalf("Failed to login: %v", err)
-	}
-	log.Printf("Logged in successfully. Access token: %v", tokens.AccessToken)
-
-	// Demonstrate user logout
-	err = logoutUser(authClient, tokens.AccessToken)
-	if err != nil {
-		log.Fatalf("Failed to logout: %v", err)
-	}
-	log.Println("Logged out successfully")
-}
-
-func registerUser(client pb.UserAccountServiceClient) (*pb.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	// User input (in a real application, these would come from user interface)
+	// 1. Collect user input (simulated here)
 	username := "alice"
 	email := "alice@example.com"
 	bio := "Crypto enthusiast"
-	password := "super-secret-password"
+	password := "secure_password_123"
 
-	// Generate salt
+	// 2. Generate salt
 	salt := make([]byte, 16)
-	_, err := rand.Read(salt)
-	if err != nil {
+	if _, err := rand.Read(salt); err != nil {
 		log.Fatalf("Failed to generate salt: %v", err)
 	}
 
-	// Generate encryption key
-	encryptionKey := pq4.ArgonPassword([]byte(password), salt)
+	// 3. Create encryption key
+	encryptionKey := argon2.IDKey([]byte(password), salt, 1, 64*1024, 4, 32)
 
-	// Generate cryptographic keys
+	// 4. Generate cryptographic keys
 	identityPrivKey, identityPubKey, err := pq4.GenerateE521KeyPair()
 	if err != nil {
-		log.Fatalf("Failed to generate identity key pair: %v", err)
+		log.Fatalf("Failed to generate identity key: %v", err)
 	}
 
 	signedPreKeyPriv, signedPreKeyPub, err := pq4.GenerateE521KeyPair()
 	if err != nil {
-		log.Fatalf("Failed to generate signed pre-key pair: %v", err)
+		log.Fatalf("Failed to generate signed pre-key: %v", err)
 	}
 
-	// Generate one-time pre-keys (let's generate 3 for this example)
-	var oneTimePreKeys [][]byte
-	for i := 0; i < 3; i++ {
+	oneTimePreKeys := make([][]byte, 100)
+	for i := 0; i < 100; i++ {
 		_, pubKey, err := pq4.GenerateE521KeyPair()
 		if err != nil {
-			log.Fatalf("Failed to generate one-time pre-key pair: %v", err)
+			log.Fatalf("Failed to generate one-time pre-key %d: %v", i, err)
 		}
-		oneTimePreKeys = append(oneTimePreKeys, pq4.SerializePoint(pubKey))
+		oneTimePreKeys[i] = pq4.SerializePoint(pubKey)
 	}
 
-	// Generate Kyber key pair
-	kyberPub, kyberPriv, err := kyber1024.GenerateKeyPair(rand.Reader)
+	kyberPubKey, kyberPrivKey, err := kyber1024.GenerateKeyPair(rand.Reader)
 	if err != nil {
-		log.Fatalf("Failed to generate Kyber key pair: %v", err)
+		log.Fatalf("Failed to generate Kyber key: %v", err)
 	}
 
-	kyberPubBytes := make([]byte, kyber1024.PublicKeySize)
-	kyberPub.Pack(kyberPubBytes)
+	kyberPrivKeyBytes := make([]byte, kyber1024.PrivateKeySize)
+	kyberPrivKey.Pack(kyberPrivKeyBytes)
 
-	// Sign the signed pre-key
-	signedPreKeySig, err := pq4.SignMessage(identityPrivKey, pq4.SerializePoint(signedPreKeyPub))
+	kyberPubKeyBytes := make([]byte, kyber1024.PublicKeySize)
+	kyberPubKey.Pack(kyberPubKeyBytes)
+
+	// 5. Sign the signed pre-key
+	signedPreKeySignature, err := pq4.SignMessage(identityPrivKey, pq4.SerializePoint(signedPreKeyPub))
 	if err != nil {
 		log.Fatalf("Failed to sign pre-key: %v", err)
 	}
 
-	// Encrypt private keys
-	privateKeys := map[string]interface{}{
-		"identity_key":      identityPrivKey,
-		"signed_pre_key":    signedPreKeyPriv,
-		"kyber_private_key": kyberPriv,
+	// 6. Encrypt private keys
+	privateKeys := struct {
+		IdentityKey     *big.Int
+		SignedPreKey    *big.Int
+		KyberPrivateKey []byte
+	}{
+		IdentityKey:     identityPrivKey,
+		SignedPreKey:    signedPreKeyPriv,
+		KyberPrivateKey: kyberPrivKeyBytes,
 	}
-	privateKeysJSON, err := json.Marshal(privateKeys)
+
+	privateKeysBytes, err := json.Marshal(privateKeys)
 	if err != nil {
 		log.Fatalf("Failed to marshal private keys: %v", err)
 	}
-	encryptedPrivateKeys, err := pq4.Encrypt(encryptionKey, privateKeysJSON, nil)
+
+	encryptedPrivateKeys, err := pq4.Encrypt(encryptionKey, privateKeysBytes, nil)
 	if err != nil {
 		log.Fatalf("Failed to encrypt private keys: %v", err)
 	}
 
-	// Compute password HMAC
-	passwordHMAC, err := pq4.HmacPassword([]byte(password), salt)
-	if err != nil {
-		log.Fatalf("Failed to compute password HMAC: %v", err)
+	// 7. Compute password HMAC
+	authKeyReader := hkdf.New(sha512.New, encryptionKey, salt, []byte("Auth"))
+	authKey := make([]byte, 32)
+	if _, err := authKeyReader.Read(authKey); err != nil {
+		log.Fatalf("Failed to generate auth key: %v", err)
 	}
+	passwordHmac := pq4.ComputeHMAC(authKey, []byte("Login"))
 
-	// Build the CreateUserRequest
-	request := &pb.CreateUserRequest{
+	// 8. Populate the request structure
+	req := struct {
+		Username              string   `json:"username"`
+		Email                 string   `json:"email"`
+		Bio                   string   `json:"bio"`
+		PasswordHmac          []byte   `json:"password_hmac"`
+		Salt                  []byte   `json:"salt"`
+		PublicIdentityKey     []byte   `json:"public_identity_key"`
+		PublicSignedPreKey    []byte   `json:"public_signed_pre_key"`
+		SignedPreKeySignature []byte   `json:"signed_pre_key_signature"`
+		PublicKyberKey        []byte   `json:"public_kyber_key"`
+		PublicOneTimePreKeys  [][]byte `json:"public_one_time_pre_keys"`
+		EncryptedPrivateKeys  []byte   `json:"encrypted_private_keys"`
+	}{
 		Username:              username,
 		Email:                 email,
-		Bio:                   &bio, // Using a pointer for optional field
-		PasswordHmac:          passwordHMAC,
+		Bio:                   bio,
+		PasswordHmac:          passwordHmac,
 		Salt:                  salt,
 		PublicIdentityKey:     pq4.SerializePoint(identityPubKey),
 		PublicSignedPreKey:    pq4.SerializePoint(signedPreKeyPub),
-		SignedPreKeySignature: signedPreKeySig,
+		SignedPreKeySignature: signedPreKeySignature,
+		PublicKyberKey:        kyberPubKeyBytes,
 		PublicOneTimePreKeys:  oneTimePreKeys,
-		PublicKyberKey:        kyberPubBytes,
 		EncryptedPrivateKeys:  encryptedPrivateKeys,
 	}
 
-	resp, err := client.CreateUser(ctx, request)
+	// 9. Serialize and send the request
+	requestBody, err := json.Marshal(req)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed to marshal request: %v", err)
 	}
-	return resp.User, nil
-}
 
-func loginUser(client pb.AuthenticationServiceClient, email, password string) (*pb.LoginResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+	println(requestBody)
 
-	return client.Login(ctx, &pb.LoginRequest{
-		Email:    email,
-		Password: password,
-	})
-}
+	// Load client certificate and key
+	clientCert, err := tls.LoadX509KeyPair("/Users/usmanakhmedov/FleetProjects/speech/client.crt", "/Users/usmanakhmedov/FleetProjects/speech/client.key")
+	if err != nil {
+		log.Fatalf("Failed to load client certificate and key: %v", err)
+	}
 
-func logoutUser(client pb.AuthenticationServiceClient, accessToken string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+	// Create a custom TLS configuration
+	tlsConfig := &tls.Config{
+		Certificates:       []tls.Certificate{clientCert},
+		InsecureSkipVerify: true, // Only use this for development/testing!
+	}
 
-	_, err := client.Logout(ctx, &pb.LogoutRequest{
-		AccessToken: accessToken,
-	})
-	return err
+	// Create a custom HTTP client with the TLS configuration
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	// Send the request to the server
+	resp, err := client.Post("https://localhost:8443/users", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		log.Fatalf("Failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Failed to read response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Registration failed. Server responded with status code %d: %s", resp.StatusCode, body)
+	}
+
+	fmt.Println("Registration successful!")
+	fmt.Printf("Server response: %s\n", body)
 }
